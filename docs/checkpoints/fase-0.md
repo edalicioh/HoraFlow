@@ -148,9 +148,10 @@ pelo adapter. O build nativo é permitido por `pnpm-workspace.yaml` em
   permissão `0600`.
 - Compose publica `127.0.0.1:${HORFLOW_PORT:-3000}:3000`, com
   `restart: unless-stopped`, `no-new-privileges`, `cap_drop: ALL` e healthcheck.
-- Imagem final: `horaflow:phase-0`, ID
+- Imagem inicial: `horaflow:phase-0`, ID
   `sha256:9a67a6d67a3f2f1f42f674c2e1b8ff8233eb73f3235cbe25fa97d1c1bd5e5a93`
-  (1,14 GB).
+  (1,14 GB). Após as correções, imagem reconstruída e smoke repetido:
+  `sha256:4f0c764603b053e384aa10e4800905f6c4995d476bbdb7acb10751ece8f479c8`.
 - README documenta execução local, testes, Docker e isolamento de dados.
 
 ## 5. Evidências executadas

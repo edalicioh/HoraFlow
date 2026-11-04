@@ -19,13 +19,15 @@ revisão independente nem a aprovação explícita do usuário.
 | Registro das decisões aprovadas | `06c1270` |
 | Implementação da Fase 0 | `5f3ca8470d3f8a166f20694cee4c1f60b1afb2e9` |
 | Diff da fase | `9a00419..5f3ca84` — 75 arquivos, +9105/−2 |
+| Correções após revisão | `e4088dd0b0e02e9e5c0b457ac7982c8e4b39ab73` |
+| Diff corretivo | `33ed65e..e4088dd` — 28 arquivos, +1351/−54 |
 | Migração inicial | `prisma/migrations/20261104093005_init` |
 
 A entrega da fase está no commit `5f3ca84`. Um commit posterior apenas inclui
 este checkpoint. Nenhum remoto foi publicado.
 
-A correção será registrada em commit separado. As alterações de coordenação em
-`AGENTS.md`/`opencode.jsonc` foram feitas pelo coordenador e preservadas. Big
+As alterações de coordenação em `AGENTS.md`/`opencode.jsonc` foram feitas pelo
+coordenador e preservadas. Big
 Pickle iniciou as correções, mas ficou sem cota; DeepSeek também ficou
 indisponível por cota e não executou validações. GPT-6 Luna retomou como
 construtor sequencial, sem delegação. A cadeia autorizada e a precedência sobre

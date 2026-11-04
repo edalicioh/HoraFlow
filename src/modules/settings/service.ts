@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { ValidationError } from "@/lib/errors";
+import type { PrismaClient } from "@/generated/prisma/client";
 import { z } from "zod";
 import {
   SETTINGS_ID,
@@ -29,12 +30,32 @@ function snapshot(settings: SettingsRecord) {
  * Inicialização idempotente do singleton. A moeda é criada como BRL e não
  * é editável no MVP; a política de troca com histórico continua pendente.
  */
-export async function getSettings(): Promise<SettingsRecord> {
-  return prisma.settings.upsert({
-    where: { id: SETTINGS_ID },
-    update: {},
-    create: { id: SETTINGS_ID },
-  });
+export async function getSettings(
+  client: Pick<PrismaClient, "settings"> = prisma,
+): Promise<SettingsRecord> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await client.settings.upsert({
+        where: { id: SETTINGS_ID },
+        update: {},
+        create: { id: SETTINGS_ID },
+      });
+    } catch (error) {
+      // Independent SQLite connections may contend while creating the initial
+      // singleton. Retry only Prisma's adapter timeout; surface all other errors.
+      const retryable =
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        error.code === "P1008";
+
+      if (!retryable || attempt >= 2) {
+        throw error;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 50 * (attempt + 1)));
+    }
+  }
 }
 
 export async function updateSettings(

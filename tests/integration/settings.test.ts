@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
+  createClient,
   createTestDatabase,
   type TestDatabase,
 } from "../helpers/database";
@@ -21,6 +22,29 @@ afterAll(async () => {
 });
 
 describe("Settings singleton", () => {
+  it("inicializa o banco vazio com conexões independentes concorrentes", async () => {
+    const empty = createTestDatabase("settings-init");
+    const clients = [
+      empty.prisma,
+      createClient(empty.url),
+      createClient(empty.url),
+      createClient(empty.url),
+    ];
+
+    try {
+      await Promise.all(
+        clients.map((client) => settingsService.getSettings(client)),
+      );
+
+      expect(await empty.prisma.settings.count()).toBe(1);
+    } finally {
+      await Promise.all(
+        clients.slice(1).map((client) => client.$disconnect()),
+      );
+      await empty.cleanup();
+    }
+  });
+
   it("inicializa uma única vez com BRL e timezone padrão", async () => {
     const first = await settingsService.getSettings();
     const second = await settingsService.getSettings();
@@ -120,5 +144,48 @@ describe("Settings singleton", () => {
       where: { id: "singleton" },
     });
     expect(persisted.currency).toBe("BRL");
+  });
+
+  it("faz rollback integral das configurações quando a auditoria falha", async () => {
+    await settingsService.updateSettings({
+      timezone: "America/Sao_Paulo",
+      defaultHourlyRateCents: 12_345,
+    });
+
+    const auditBefore = await database.prisma.auditLog.count({
+      where: { entity: "Settings", entityId: "singleton" },
+    });
+
+    await database.prisma.$executeRawUnsafe(`
+      CREATE TRIGGER "Settings_audit_failure"
+      BEFORE INSERT ON "AuditLog"
+      BEGIN
+        SELECT RAISE(ABORT, 'audit failure');
+      END
+    `);
+
+    try {
+      await expect(
+        settingsService.updateSettings({
+          timezone: "Europe/Lisbon",
+          defaultHourlyRateCents: 99_900,
+        }),
+      ).rejects.toThrow();
+    } finally {
+      await database.prisma.$executeRawUnsafe(
+        'DROP TRIGGER IF EXISTS "Settings_audit_failure"',
+      );
+    }
+
+    const persisted = await database.prisma.settings.findUniqueOrThrow({
+      where: { id: "singleton" },
+    });
+    const auditAfter = await database.prisma.auditLog.count({
+      where: { entity: "Settings", entityId: "singleton" },
+    });
+
+    expect(persisted.timezone).toBe("America/Sao_Paulo");
+    expect(persisted.defaultHourlyRateCents).toBe(12_345);
+    expect(auditAfter).toBe(auditBefore);
   });
 });

@@ -1,8 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { z } from "zod";
 import { DomainError } from "@/lib/errors";
+import { evaluateRequestPolicy } from "@/lib/request-policy";
 import {
   type SettingsActionState,
 } from "@/modules/settings/action-state";
@@ -13,6 +15,23 @@ export async function updateSettingsAction(
   _previousState: SettingsActionState,
   formData: FormData,
 ): Promise<SettingsActionState> {
+  const requestHeaders = await headers();
+  const policy = evaluateRequestPolicy({
+    method: "POST",
+    headers: requestHeaders,
+  });
+
+  if (!policy.allowed) {
+    console.warn(
+      `[request-policy] Server Action de configurações rejeitada (${policy.reason}).`,
+    );
+
+    return {
+      status: "error",
+      message: "Solicitação não autorizada.",
+    };
+  }
+
   const parsed = settingsFormSchema.safeParse({
     timezone: String(formData.get("timezone") ?? ""),
     defaultHourlyRate: String(formData.get("defaultHourlyRate") ?? ""),

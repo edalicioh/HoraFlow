@@ -209,6 +209,19 @@ Gates comuns: instalação com lockfile, lint, TypeScript, unitários, integraç
 
 ## 9. Referências verificadas
 
+### Emenda de coordenação — 2026-11-04
+
+O usuário autorizou a cadeia de construção **Big Pickle** (`opencode/big-pickle`),
+primeiro fallback **DeepSeek V4.1 Flash Free**
+(`opencode/deepseek-v4.1-flash-free#high`) e segundo fallback **GPT-6 Luna**
+(`openai/gpt-6-luna#high`). A coordenação seleciona explicitamente o modelo e
+registra o executor; não há failover automático. Esta autorização atualizada e
+o `AGENTS.md` da raiz prevalecem sobre referências anteriores neste guia que
+exijam exclusivamente Big Pickle para construir/corrigir. A revisão continua
+independente com GPT-6.1 Sol (`openai/gpt-6.1-sol`), somente leitura. No caso
+desta retomada, Big Pickle e DeepSeek ficaram indisponíveis por cota; GPT-6 Luna
+foi explicitamente autorizado como construtor sequencial, sem delegação.
+
 - OpenCode V2 — [configuração](https://opencode.ai/v2/docs/config), [agentes](https://opencode.ai/v2/docs/agents) e [CLI](https://opencode.ai/v2/docs/cli).
 - Prisma — [SQLite e tipos suportados](https://www.prisma.io/docs/orm/overview/databases/sqlite).
 - Seleções exatas de `opencode/big-pickle` e `openai/gpt-6.1-sol` consultadas no catálogo de modelos disponível na sessão.

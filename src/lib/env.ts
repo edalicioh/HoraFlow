@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { resolveDatabaseUrl } from "../../scripts/database-url.mjs";
 
 const environmentSchema = z.object({
   DATABASE_URL: z
@@ -13,7 +14,9 @@ const environmentSchema = z.object({
 });
 
 export function getDatabaseUrl(): string {
-  return environmentSchema.parse({
+  const configured = environmentSchema.parse({
     DATABASE_URL: process.env.DATABASE_URL ?? "file:./data/horaflow.db",
   }).DATABASE_URL;
+
+  return resolveDatabaseUrl(configured);
 }

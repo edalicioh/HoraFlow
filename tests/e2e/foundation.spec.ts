@@ -1,4 +1,14 @@
 import { expect, test } from "@playwright/test";
+import { execFileSync } from "node:child_process";
+
+test("servidor de desenvolvimento escuta somente em loopback", async () => {
+  const listening = execFileSync("ss", ["-ltnp", "sport = :3100"], {
+    encoding: "utf8",
+  });
+
+  expect(listening).toContain("127.0.0.1:3100");
+  expect(listening).not.toMatch(/(?:0\.0\.0\.0|\*|\[::\]):3100/);
+});
 
 test("abre o dashboard sem login e navega pelas áreas", async ({ page }) => {
   await page.goto("/");

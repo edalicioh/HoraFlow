@@ -167,6 +167,101 @@ describe("migrations SQLite", () => {
     ).rejects.toThrow();
   });
 
+  it("aplica checks negativos de pagamentos, revisões e singleton", async () => {
+    const client = await database.prisma.client.create({
+      data: { name: "Cliente negativos" },
+    });
+    const period = await database.prisma.billingPeriod.create({
+      data: { clientId: client.id, year: 2026, month: 12 },
+    });
+
+    await expect(
+      database.prisma.payment.create({
+        data: {
+          billingPeriodId: period.id,
+          revision: 1,
+          amountCents: 0,
+          paidAt: new Date(),
+        },
+      }),
+    ).rejects.toThrow();
+
+    await expect(
+      database.prisma.payment.create({
+        data: {
+          billingPeriodId: period.id,
+          revision: 0,
+          amountCents: 100,
+          paidAt: new Date(),
+        },
+      }),
+    ).rejects.toThrow();
+
+    await expect(
+      database.prisma.billingPeriod.create({
+        data: { clientId: client.id, year: 2026, month: 1, revision: 0 },
+      }),
+    ).rejects.toThrow();
+
+    await expect(
+      database.prisma.settings.create({ data: { id: "outro" } }),
+    ).rejects.toThrow();
+  });
+
+  it("aplica FKs restritivas nas relações principais", async () => {
+    await expect(
+      database.prisma.project.create({
+        data: { clientId: "cliente-inexistente", name: "Projeto órfão" },
+      }),
+    ).rejects.toThrow();
+
+    await expect(
+      database.prisma.timeEntry.create({
+        data: {
+          projectId: "projeto-inexistente",
+          workDate: "2026-10-03",
+          mode: "DURATION",
+          durationMinutes: 30,
+          hourlyRateCents: 1_000,
+          amountCents: 500,
+        },
+      }),
+    ).rejects.toThrow();
+
+    await expect(
+      database.prisma.billingPeriod.create({
+        data: { clientId: "cliente-inexistente", year: 2026, month: 2 },
+      }),
+    ).rejects.toThrow();
+
+    await expect(
+      database.prisma.payment.create({
+        data: {
+          billingPeriodId: "periodo-inexistente",
+          revision: 1,
+          amountCents: 100,
+          paidAt: new Date(),
+        },
+      }),
+    ).rejects.toThrow();
+
+    await expect(
+      database.prisma.billingItem.create({
+        data: {
+          billingPeriodId: "periodo-inexistente",
+          timeEntryId: "apontamento-inexistente",
+          revision: 1,
+          clientName: "Cliente",
+          projectName: "Projeto",
+          workDate: "2026-10-03",
+          durationMinutes: 30,
+          hourlyRateCents: 1_000,
+          amountCents: 500,
+        },
+      }),
+    ).rejects.toThrow();
+  });
+
   it("aplica checks de duração e moeda no banco", async () => {
     const client = await database.prisma.client.create({
       data: { name: "Cliente checks" },

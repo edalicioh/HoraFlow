@@ -2,16 +2,25 @@
 
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
-import { useRef } from "react";
+import { useRef, type KeyboardEvent } from "react";
 import { AppNav } from "@/components/layout/app-nav";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 export function MobileHeader() {
   const detailsRef = useRef<HTMLDetailsElement>(null);
+  const summaryRef = useRef<HTMLElement>(null);
 
   function closeMenu() {
     if (detailsRef.current) {
       detailsRef.current.open = false;
+    }
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLDetailsElement>) {
+    if (event.key === "Escape" && detailsRef.current?.open) {
+      event.preventDefault();
+      closeMenu();
+      summaryRef.current?.focus();
     }
   }
 
@@ -30,8 +39,13 @@ export function MobileHeader() {
 
         <div className="flex items-center gap-1">
           <ThemeToggle />
-          <details ref={detailsRef} className="group relative">
+          <details
+            ref={detailsRef}
+            className="group relative"
+            onKeyDown={handleKeyDown}
+          >
             <summary
+              ref={summaryRef}
               aria-label="Abrir menu de navegação"
               className="flex size-9 cursor-pointer list-none items-center justify-center rounded-md border border-input bg-background shadow-sm transition-colors hover:bg-accent [&::-webkit-details-marker]:hidden"
             >

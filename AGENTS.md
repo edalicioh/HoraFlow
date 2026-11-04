@@ -10,12 +10,14 @@
 
 ## Modelos de construção, revisão e coordenação
 
-- Construção do aplicativo, testes e correções de implementação devem usar **Big Pickle**, ID `opencode/big-pickle`.
+- Construção do aplicativo, testes e correções de implementação usam **Big Pickle**, ID `opencode/big-pickle`, como principal. Em caso de indisponibilidade/limite, o usuário autorizou em 2026-11-04 o primeiro fallback **DeepSeek V4.1 Flash Free**, ID `opencode/deepseek-v4.1-flash-free#high`.
+- Segundo fallback autorizado: **GPT-6 Luna**, ID `openai/gpt-6-luna#high`. Após deixar a escolha pendente, o usuário confirmou em 2026-11-04 “vai ser o gpt-6-luna mesmo”, autorizando este modelo em `high`. Usá-lo quando Big Pickle e DeepSeek estiverem indisponíveis; se os três falharem, parar e aguardar decisão.
+- A cadeia de fallback é um protocolo de coordenação: selecionar explicitamente o modelo em cada delegação, comunicar a troca e registrar o executor no checkpoint. Não presumir failover automático da configuração.
 - O revisor padrão é **GPT-6.1 Sol**, ID `openai/gpt-6.1-sol`, pelo agente `reviewer`. Não usar Big Pickle como revisor.
-- A revisão é independente e somente leitura: analisar alterações e evidências, apontar problemas e devolver correções ao construtor Big Pickle. O revisor não implementa correções nem aprova avanço no lugar do usuário.
+- A revisão é independente e somente leitura: analisar alterações e evidências, apontar problemas e devolver correções ao construtor principal ou fallback autorizado. O revisor não implementa correções nem aprova avanço no lugar do usuário.
 - Conferir o modelo efetivamente selecionado: arquivo de configuração não troca automaticamente uma sessão já aberta.
-- Coordenadores de outro modelo podem planejar, revisar e orientar; delegar a implementação para Big Pickle.
-- Ao iniciar subagente construtor, informar explicitamente o modelo quando a ferramenta permitir. Se indisponível, comunicar o bloqueio; não substituir silenciosamente.
+- Coordenadores de outro modelo podem planejar, revisar e orientar; delegar a implementação para Big Pickle ou fallback autorizado quando o principal estiver indisponível.
+- Ao iniciar subagente construtor, informar explicitamente o modelo quando a ferramenta permitir. Se indisponível, comunicar a troca para o próximo fallback autorizado; esgotadas as opções autorizadas, comunicar o bloqueio sem substituir silenciosamente.
 - Ao delegar revisão, usar `reviewer` com `openai/gpt-6.1-sol`. Se a ferramenta só oferecer `general`, informar explicitamente esse modelo e o escopo somente leitura, sem herdar o modelo Big Pickle de `general`.
 - O usuário autorizou múltiplos agentes/worktrees para tarefas independentes. Isso não autoriza avanço automático de fase nem destruição de trabalho.
 
@@ -44,7 +46,7 @@
 ## Evidências
 
 - Executar testes relevantes e registrar comandos/resultados no checkpoint da fase.
-- Antes de apresentar o checkpoint para aprovação, solicitar revisão independente com GPT-6.1 Sol, registrar achados e encaminhar correções ao Big Pickle. Solicitar nova revisão quando necessário.
+- Antes de apresentar o checkpoint para aprovação, solicitar revisão independente com GPT-6.1 Sol, registrar achados e encaminhar correções ao construtor principal ou fallback autorizado. Solicitar nova revisão quando necessário.
 - Não declarar build, Docker, E2E ou aceite histórico aprovados sem execução verificável.
 - Sem a planilha real, dados sintéticos não comprovam o aceite de outubro/2026.
 - Preservar estes planos ao criar scaffold na raiz, sem apagar arquivos para satisfazer um gerador.

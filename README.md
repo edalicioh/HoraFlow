@@ -21,9 +21,21 @@ pnpm db:migrate
 pnpm dev
 ```
 
-A aplicação fica em <http://127.0.0.1:3000>. O `pnpm dev` prepara o SQLite com
+A aplicação fica em <http://127.0.0.1:3000>. Tanto `pnpm dev` quanto `pnpm start`
+escutam somente em `127.0.0.1` no host. O `pnpm dev` prepara o SQLite com
 WAL, `foreign_keys=ON` e `busy_timeout`, aplica as migrations pendentes e inicia
 o Next.js. Não há autenticação no MVP; a exposição padrão é local.
+
+Hosts recebidos são permitidos apenas para loopback por padrão (`127.0.0.1`,
+`localhost` e `[::1]`, em qualquer porta). Para uma implantação privada atrás
+de proxy, configure explicitamente `HORAFLOW_TRUSTED_HOSTS` com hosts exatos
+(separados por vírgula; pode incluir `:porta`). Não use curingas; encaminhe o
+mesmo host em `Host` e `X-Forwarded-Host`/`Forwarded`. Todas as requisições,
+inclusive leituras, têm host verificado. Mutations também exigem `Origin` HTTP(S)
+válida, não nula e igual ao host confiável; origem ausente ou `null` é rejeitada.
+Não confie em `X-Forwarded-Host` enviado livremente: o app o aceita somente se
+coincidir com `Host`. Configurar host confiável não muda a interface de escuta;
+acesso remoto deve permanecer em rede privada explicitamente configurada.
 
 O banco local fica em `data/horaflow.db`, ignorado pelo Git. Nunca coloque
 bancos, backups ou uploads em `public/`.
@@ -32,15 +44,16 @@ bancos, backups ou uploads em `public/`.
 
 | Comando | Finalidade |
 | --- | --- |
-| `pnpm dev` | Prepara banco, aplica migrations e sobe o Next.js em `:3000` |
+| `pnpm dev` | Prepara banco, aplica migrations e sobe o Next.js em `127.0.0.1:3000` |
 | `pnpm build` | Gera o Prisma Client e compila a aplicação |
-| `pnpm start` | Inicia a build de produção em `:3000` |
+| `pnpm start` | Inicia a build de produção em `127.0.0.1:3000` |
 | `pnpm lint` | ESLint com zero warnings |
 | `pnpm typecheck` | TypeScript estrito, sem emissão |
 | `pnpm test` | Testes unitários (Vitest) |
 | `pnpm test:integration` | Integração real com SQLite em `/tmp/opencode` |
+| `pnpm test:http` | Build de produção e testes HTTP contra ela |
 | `pnpm test:e2e` | Playwright em `127.0.0.1:3100` com banco exclusivo |
-| `pnpm verify` | Lint, typecheck, unitários, integração e build |
+| `pnpm verify` | Lint, typecheck, unitários, integração e testes HTTP (inclui build) |
 | `pnpm db:migrate` | Prepara o banco e aplica migrations |
 
 Os testes de integração criam bancos descartáveis em

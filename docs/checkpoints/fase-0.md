@@ -2,8 +2,9 @@
 
 - **Estado:** EM REVISÃO (não aprovado)
 - **Data da execução:** 2026-11-04
-- **Construtor:** Big Pickle (`opencode/big-pickle`), único gravador sequencial
-- **Revisão independente:** pendente — GPT-6.1 Sol (`openai/gpt-6.1-sol`, agente `reviewer`)
+- **Construtor original:** Big Pickle (`opencode/big-pickle`), implementação inicial
+- **Retomada corretiva:** GPT-6 Luna (`openai/gpt-6-luna#high`), construtor sequencial único, explicitamente autorizado pelo usuário em 2026-11-04 após indisponibilidade por cota de Big Pickle e DeepSeek
+- **Revisão independente:** GPT-6.1 Sol (`openai/gpt-6.1-sol`, agente `reviewer`) pendente após correções
 - **Aprovação do usuário:** pendente
 - **Fase seguinte:** não iniciada
 
@@ -22,6 +23,13 @@ revisão independente nem a aprovação explícita do usuário.
 
 A entrega da fase está no commit `5f3ca84`. Um commit posterior apenas inclui
 este checkpoint. Nenhum remoto foi publicado.
+
+A correção será registrada em commit separado. As alterações de coordenação em
+`AGENTS.md`/`opencode.jsonc` foram feitas pelo coordenador e preservadas. Big
+Pickle iniciou as correções, mas ficou sem cota; DeepSeek também ficou
+indisponível por cota e não executou validações. GPT-6 Luna retomou como
+construtor sequencial, sem delegação. A cadeia autorizada e a precedência sobre
+instruções antigas estão emendadas no guia de planejamento.
 
 ## 2. Decisões de domínio aplicadas
 
@@ -167,18 +175,81 @@ Todas as execuções abaixo ocorreram nesta máquina em 2026-11-04.
 | Persistência | `defaultHourlyRateCents = 15000` antes e depois de recriar e de reconstruir a imagem |
 | Volume após o smoke | `horaflow-f0-data` mantido; contêiner apenas parado |
 
+### 5.2 Revisão corretiva após bloqueio independente
+
+A primeira revisão independente bloqueou a entrega com três achados. Correções
+e evidências desta retomada:
+
+1. **Alta — interface de escuta no host:** scripts `dev` e `start` fixados em
+   `127.0.0.1`; Docker mantém escuta interna adequada em `0.0.0.0` e publicação
+   externa do host em `127.0.0.1`. E2E de desenvolvimento consultou `ss` na
+   porta 3100 e confirmou somente `127.0.0.1`; teste HTTP contra o servidor de
+   produção consultou `ss` na porta 3101 e confirmou somente `127.0.0.1`.
+   Docker Compose publicou em `127.0.0.1:3100`.
+2. **Alta — Host/Origin/CSRF:** adicionada política server-side em `src/proxy.ts`
+   para todas as rotas, com loopback como padrão e lista explícita
+   `HORAFLOW_TRUSTED_HOSTS` sem curingas. Host desconhecido é recusado inclusive
+   em leitura; `X-Forwarded-Host` e `Forwarded` não substituem o Host e devem
+   coincidir. Server Action também valida Host e exige Origin HTTP(S) presente,
+   não nula e correspondente ao host; ausência, `null`, origem divergente e
+   headers forwarded contraditórios são recusados. Teste HTTP contra build e
+   servidor de produção: 3 testes aprovados, incluindo host desconhecido com
+   origem maliciosa igual, origens inválidas, forwarded conflitante, leitura
+   local legítima e mutação local legítima. Configuração e documentação em
+   `.env.example`/README.
+3. **Média — `.env` do preparo SQLite:** resolução unificada carrega os mesmos
+   arquivos dotenv com precedência para variáveis exportadas. Teste cria projeto
+   isolado onde apenas `.env` define URL relativa não padrão; confirma que só o
+   arquivo esperado foi criado, ausência do banco padrão, diretório `0700`, DB
+   `0600`, WAL e log do preparo com `foreign_keys=1` e `busy_timeout=5000`; Prisma
+   aplica migration nesse mesmo banco.
+4. **Rollback integral de Settings:** teste injeta falha de banco no insert de
+   auditoria e confirma que timezone, tarifa e contagem de auditoria permanecem
+   exatamente como antes da transação.
+
+Também foram ampliados checks negativos para pagamentos, revisões, ID fixo do
+singleton e FKs, e concorrência de inicialização por conexões SQLite
+independentes. Para contendas temporárias da conexão no upsert, `getSettings`
+repete apenas erro Prisma P1008 até duas vezes; outros erros são propagados.
+Navegação mobile/teclado permanece coberta pelo E2E e o E2E atual passou com
+teste explícito de escuta local.
+
+Comandos corretivos executados nesta máquina:
+
+| Comando / verificação | Resultado |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Sucesso, lockfile inalterado |
+| `pnpm lint` | Sucesso, zero warnings |
+| `pnpm typecheck` | Sucesso |
+| `pnpm test` | 2 arquivos, 25 testes aprovados |
+| `pnpm test:integration` | 3 arquivos, 16 testes aprovados |
+| `pnpm test:http` | Build produção + 3 testes HTTP aprovados |
+| `LD_LIBRARY_PATH=/tmp/opencode/pw-libs/extracted/usr/lib/x86_64-linux-gnu pnpm test:e2e` | 7 aprovados, 1 Docker-only ignorado; inclui bind real de dev |
+| `DOCKER_CONFIG=/tmp/opencode/docker-anon docker compose -p horaflow-f0 config` | Configuração válida, bind `127.0.0.1` e volume de teste esperado |
+| `DOCKER_CONFIG=/tmp/opencode/docker-anon docker compose -p horaflow-f0 build` | Sucesso após incluir scripts no estágio de dependências |
+| Compose up em porta 3100 + healthcheck | `200 {"status":"ok"}`, contêiner healthy, uid 1001, DB `0600`, rota pública do banco `404` |
+| Recriação de contêiner com volume preservado | Migration sem pendências; Settings permaneceu `America/Sao_Paulo`, BRL, `15000` centavos |
+| `docker compose -p horaflow-f0 stop` | Contêiner próprio parado; volume `horaflow-f0-data` preservado |
+| `git diff --check` | Sem whitespace errors |
+
 ### 5.1 Condições específicas desta máquina
 
 - O host não possui `libasound.so.2`, exigida pelo Chromium do Playwright. O E2E
-  foi executado com `LD_LIBRARY_PATH` apontando para uma extração local em
-  `/tmp/opencode/pw-libs/`, sem alteração de sistema ou do projeto. Em outra
-  máquina, instale as dependências de sistema do Playwright.
+  foi executado com `LD_LIBRARY_PATH=/tmp/opencode/pw-libs/extracted/usr/lib/x86_64-linux-gnu`,
+  apontando para extração local, sem alteração do sistema ou do projeto. A
+  primeira tentativa usou caminho pai incorreto e falhou; a repetição com o
+  diretório real passou. Em outra máquina, instale as dependências de sistema.
 - As credenciais antigas do Docker Hub nesta máquina estão inválidas. O build e
   o smoke usaram `DOCKER_CONFIG=/tmp/opencode/docker-anon` apenas para pulls
   anônimos de imagens públicas. Nenhuma credencial ou configuração do usuário
   foi alterada.
 - O `next dev` acrescentou um bloco de instruções ao `AGENTS.md`; ele foi
   preservado e commitado junto com a fase.
+- A primeira tentativa de build Docker após mudança em `prisma.config.ts`
+  revelou que `scripts/` não estava copiado antes do `postinstall`; o Dockerfile
+  foi corrigido e rebuild/smoke completos passaram. Aviso Prisma sobre
+  identificação automática de OpenSSL apareceu durante instalação; build e
+  runtime Docker passaram com OpenSSL instalado na imagem final.
 
 ## 6. Rastreabilidade dos requisitos da fase
 

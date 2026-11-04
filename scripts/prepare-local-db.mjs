@@ -1,30 +1,31 @@
 import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
+import { loadProjectEnv } from "./load-env.mjs";
+import { resolveDatabaseFile } from "./database-url.mjs";
 
-const url = process.env.DATABASE_URL ?? "file:./data/horaflow.db";
+loadProjectEnv();
 
-if (!url.startsWith("file:")) {
-  console.error("DATABASE_URL deve usar o esquema file: para SQLite.");
+const configuredUrl = process.env.DATABASE_URL ?? "file:./data/horaflow.db";
+
+let absolutePath;
+try {
+  absolutePath = resolveDatabaseFile(configuredUrl);
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
   process.exit(1);
 }
 
-let filePath = url.slice("file:".length);
-if (filePath.startsWith("///")) {
-  filePath = filePath.slice(2);
-} else if (filePath.startsWith("//")) {
-  filePath = filePath.slice(1);
-}
-
-const absolutePath = path.resolve(filePath);
 const directory = path.dirname(absolutePath);
 
 fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
 
 const database = new Database(absolutePath);
-database.pragma("journal_mode = WAL");
+const journalMode = database.pragma("journal_mode = WAL", { simple: true });
 database.pragma("busy_timeout = 5000");
 database.pragma("foreign_keys = ON");
+const foreignKeys = database.pragma("foreign_keys", { simple: true });
+const busyTimeout = database.pragma("busy_timeout", { simple: true });
 database.close();
 
 try {
@@ -33,4 +34,6 @@ try {
   // Em volumes gerenciados, a permissão pode ser controlada pelo host.
 }
 
-console.log(`SQLite preparado em ${absolutePath}`);
+console.log(
+  `SQLite preparado em ${absolutePath} (journal_mode=${journalMode}, foreign_keys=${foreignKeys}, busy_timeout=${busyTimeout})`,
+);

@@ -22,7 +22,8 @@ revisão independente nem a aprovação explícita do usuário.
 | Diff da fase | `9a00419..5f3ca84` — 75 arquivos, +9105/−2 |
 | Correções após revisão | `e4088dd0b0e02e9e5c0b457ac7982c8e4b39ab73` |
 | Diff corretivo | `33ed65e..e4088dd` — 28 arquivos, +1351/−54 |
-| Retomada da segunda revisão | será registrada em commit corretivo após gates |
+| Retomada da segunda revisão | `90363d8b1523724679ed6062c5640d00a782e562` |
+| Diff da segunda retomada | `633c38b..90363d8` — 13 arquivos, +473/−110 |
 | Migração inicial | `prisma/migrations/20261104093005_init` |
 
 A entrega da fase está no commit `5f3ca84`. Um commit posterior apenas inclui

@@ -258,13 +258,16 @@ executar `migrate deploy` no mesmo SQLite. O setup foi corrigido para deixar o
 runtime inicializar Settings somente após migrations; nova execução de
 `pnpm test:http` passou (3/3).
 
-Uma tentativa inicial de iniciar `pnpm dev` numa cópia temporária com `src` e
-`node_modules` symlinkados abriu a porta, mas não respondeu a `/settings` em 150s;
-o único processo do teste foi parado e o diretório temporário isolado removido.
-O teste de `.env.development` foi então limitado ao pipeline real do runner
-preparação+Prisma; o E2E da aplicação real cobre `pnpm dev` com a URL de teste
-exportada. O runtime com arquivo de ambiente e `$VAR` foi exercitado em produção
-por `pnpm start`. Não alegamos teste de runtime dev lendo `.env.development`.
+Foram feitas duas tentativas de exercitar `pnpm dev` numa cópia temporária
+isolada: primeiro com `src` symlinkado; depois com fonte copiada e `tsconfig`.
+Ambas abriram a porta, mas a resposta de `/settings` não ficou disponível; a
+segunda registrou repetidos `ENOENT` para `.next/dev/server/pages/_app/build-manifest.json`.
+Os processos pertencentes aos testes e os diretórios temporários foram removidos.
+O teste de `.env.development` cobre então o pipeline real do runner
+preparação+Prisma; o E2E da aplicação real cobre `pnpm dev` e bind local com a
+URL de teste exportada. O runtime com arquivo de ambiente e `$VAR` foi exercitado
+em produção por `pnpm start`. Não alegamos teste de runtime dev lendo
+`.env.development`; essa é uma limitação residual explicitada para revisão.
 
 ### Achados da segunda revisão GPT-6.1 Sol
 
@@ -274,6 +277,7 @@ dotenv. As correções acima abordam a seleção de `.env.development` sem
 `NODE_ENV`, seleção equivalente de produção, expansão de variáveis, precedência
 de valores exportados e porta explícita. Este commit volta à revisão independente;
 não há autoaprovação nem liberação de fase.
+
 ### 5.3 Condições específicas desta máquina
 
 - O host não possui `libasound.so.2`, exigida pelo Chromium do Playwright. O E2E

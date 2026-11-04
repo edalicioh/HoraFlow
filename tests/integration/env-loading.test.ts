@@ -41,16 +41,21 @@ function environmentWithoutDatabaseUrl(): NodeJS.ProcessEnv {
 
 function createRuntimeFixture(name: string, production: boolean): string {
   const fixture = mkdtempSync(path.join(testRoot, `horaflow-f0-${name}-`));
-  for (const directory of ["scripts", "prisma"]) {
+  for (const directory of ["scripts", "prisma", "src"]) {
     cpSync(path.join(projectRoot, directory), path.join(fixture, directory), {
       recursive: true,
     });
   }
-  for (const file of ["package.json", "prisma.config.ts", "next.config.ts", "postcss.config.mjs"]) {
+  for (const file of [
+    "package.json",
+    "prisma.config.ts",
+    "next.config.ts",
+    "postcss.config.mjs",
+    "tsconfig.json",
+  ]) {
     cpSync(path.join(projectRoot, file), path.join(fixture, file));
   }
   symlinkSync(path.join(projectRoot, "node_modules"), path.join(fixture, "node_modules"), "dir");
-  symlinkSync(path.join(projectRoot, "src"), path.join(fixture, "src"), "dir");
   symlinkSync(path.join(projectRoot, "public"), path.join(fixture, "public"), "dir");
   if (production) {
     cpSync(path.join(projectRoot, ".next"), path.join(fixture, ".next"), {
@@ -61,9 +66,19 @@ function createRuntimeFixture(name: string, production: boolean): string {
 }
 
 async function waitForServer(child: ChildProcess, port: number): Promise<void> {
+  let logs = "";
+  child.stdout?.on("data", (chunk) => {
+    logs += String(chunk);
+  });
+  child.stderr?.on("data", (chunk) => {
+    logs += String(chunk);
+  });
+
   for (let attempt = 0; attempt < 240; attempt += 1) {
     if (child.exitCode !== null) {
-      throw new Error(`Servidor HoraFlow terminou prematuramente (code ${child.exitCode}).`);
+      throw new Error(
+        `Servidor HoraFlow terminou prematuramente (code ${child.exitCode}):\n${logs}`,
+      );
     }
     try {
       const response = await fetch(`http://127.0.0.1:${port}/settings`);
@@ -73,7 +88,7 @@ async function waitForServer(child: ChildProcess, port: number): Promise<void> {
     }
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
-  throw new Error(`Servidor HoraFlow não respondeu na porta ${port}.`);
+  throw new Error(`Servidor HoraFlow não respondeu na porta ${port}:\n${logs}`);
 }
 
 async function stopServer(child: ChildProcess): Promise<void> {
@@ -190,7 +205,7 @@ describe("resolução de DATABASE_URL", () => {
     }
   });
 
-  it("usa .env.development no runner equivalente ao pipeline do script pnpm dev", () => {
+  it("usa .env.development no pipeline de preparação e migration do modo dev", () => {
     const fixture = createRuntimeFixture("runtime-development", false);
     const expectedPath = path.join(fixture, "private", "development", "horaflow.db");
     writeFileSync(

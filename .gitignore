@@ -1,0 +1,39 @@
+# Worktrees locais.
+.worktrees/
+
+# Configuração privada e arquivos operacionais.
+.env
+.env.*
+!.env.example
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+data/
+backups/
+uploads/
+fixtures/private/
+
+# Dependências, builds, testes e artefatos gerados.
+node_modules/
+.next/
+out/
+dist/
+coverage/
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
+.turbo/
+.vercel/
+.eslintcache
+*.tsbuildinfo
+src/generated/prisma/
+
+# Logs, arquivos de sistema e processos locais.
+*.log
+*.pid
+.DS_Store
+Thumbs.db

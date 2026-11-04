@@ -1,0 +1,31 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  // Modelo solicitado pelo usuário para a construção do HoraFlow.
+  // Sessões já abertas mantêm sua própria seleção de modelo.
+  "model": "opencode/big-pickle",
+  "agents": {
+    "build": {
+      "model": "opencode/big-pickle"
+    },
+    "general": {
+      "model": "opencode/big-pickle"
+    },
+    "explore": {
+      "model": "opencode/big-pickle"
+    },
+    "reviewer": {
+      "description": "Revisão independente de código, testes e critérios de aceite do HoraFlow",
+      "mode": "subagent",
+      "model": "openai/gpt-6.1-sol",
+      "system": "Atue como revisor independente do HoraFlow. Leia AGENTS.md e o plano da fase. Revise as alterações sem modificar arquivos nem executar comandos shell. Priorize bugs, integridade financeira, segurança, regressões e lacunas de testes. Apresente achados por severidade com arquivo, linha e recomendação. Diferencie testes comprovados de evidências ausentes. Solicite correções ao construtor Big Pickle; não implemente as correções e não substitua a aprovação do usuário.",
+      "permissions": [
+        { "action": "edit", "resource": "*", "effect": "deny" },
+        { "action": "shell", "resource": "*", "effect": "deny" },
+        { "action": "subagent", "resource": "*", "effect": "deny" }
+      ]
+    }
+  },
+  "worktree": {
+    "directory": ".worktrees"
+  }
+}

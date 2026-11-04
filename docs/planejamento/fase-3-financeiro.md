@@ -26,11 +26,13 @@ O PRD exige um único item **ativo** por apontamento, mas não possui campo que 
 
 Alternativa mais simples: remover itens apenas na reabertura e guardar snapshot completo no `AuditLog`. Exige aceite explícito, pois consultas históricas dependerão da auditoria. Escolher **uma** estratégia antes da migration inicial e documentar invariantes/consultas. Não implementar as duas em paralelo.
 
+**Decisão aprovada pelo usuário em 2026-11-04:** adotar a proposta preferencial de preservação por versões. Ficam aprovados `BillingPeriod.revision`, `BillingItem.revision`, `BillingItem.releasedAt`, a associação da revisão em `Payment` e o índice único parcial em `BillingItem(timeEntryId) WHERE releasedAt IS NULL`, implementado por SQL na migration e coberto por teste real. A estratégia alternativa de remoção não será implementada.
+
 ### 2.2. Outras políticas pendentes
 
 - **Competência fechada:** proposta de bloquear novos apontamentos/importação e alterações daquele cliente/mês até reabertura, inclusive mudança de um registro para dentro/fora dessa competência.
 - **Fechamento sem itens/zero:** decidir se vazio é rejeitado; zero financeiro com minutos e tarifa zero é um caso distinto de vazio.
-- **Identidade histórica:** tarifa/duração/valor são snapshots obrigatórios. Proposta de incluir nome de cliente/projeto e descrição exibida para manter demonstrativo idêntico após edição dos cadastros.
+- **Identidade histórica:** tarifa/duração/valor são snapshots obrigatórios. Proposta de incluir nome de cliente/projeto e descrição exibida para manter demonstrativo idêntico após edição dos cadastros. **Aprovada pelo usuário em 2026-11-04:** congelar também os nomes de cliente/projeto e a descrição do item no fechamento, para demonstrativos históricos imutáveis.
 - **Data do pagamento:** interface pede data civil; definir conversão para `paidAt` UTC no fuso configurado, sem usar timezone do navegador nem alterar a data histórica ao trocar configuração.
 - **Motivo de reabertura/estorno:** proposta de exigir observação; não adicionar `User`, login ou autor fictício. Auditoria pode registrar origem da operação como sistema/local.
 

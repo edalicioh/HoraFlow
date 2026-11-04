@@ -67,7 +67,14 @@ Confirmar estas políticas no momento indicado, registrar a resposta no plano co
 | Motivo de reabertura/estorno | Exigir observação, sem criar identidade de usuário | Antes das ações financeiras |
 | Importação | Limites propostos, duplicados e opção explícita de ignorar inválidos | Antes do wizard |
 
-Uma pendência não relacionada não impede trabalho independente; não criar migrations ou contratos irreversíveis que dependam de resposta ainda não obtida.
+### 4.1. Decisões aprovadas pelo usuário em 2026-11-04
+
+Estas respostas foram confirmadas explicitamente durante a execução da Fase 0 e liberam apenas o schema/migration inicial correspondente. Elas não autorizam implementar os fluxos financeiros da Fase 3.
+
+- **BillingItem ativo/histórico:** aprovada a estratégia de **preservar versões**. A reabertura mantém os itens anteriores, libera os apontamentos por `releasedAt`, registra revisão em `BillingPeriod`, `BillingItem` e `Payment` e aplica unicidade parcial em `BillingItem.timeEntryId WHERE releasedAt IS NULL`.
+- **Identidade em demonstrativos:** aprovado o **congelamento de snapshots** de nome do cliente, nome do projeto e descrição do item, além de duração, tarifa e valor, para que demonstrativos históricos permaneçam imutáveis após edições cadastrais.
+
+As demais linhas desta seção continuam pendentes e devem ser confirmadas no momento indicado. Uma pendência não relacionada não impede trabalho independente; não criar migrations ou contratos irreversíveis que dependam de resposta ainda não obtida.
 
 ## 5. Construtor, revisor e coordenador
 

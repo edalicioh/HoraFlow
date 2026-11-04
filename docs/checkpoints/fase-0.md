@@ -1,10 +1,10 @@
 # Checkpoint — Fase 0 (fundação)
 
-- **Estado:** EM REVISÃO (não aprovado)
+- **Estado:** REVISÃO TÉCNICA CONCLUÍDA — aguardando aprovação do usuário
 - **Data da execução:** 2026-11-04
 - **Construtor original:** Big Pickle (`opencode/big-pickle`), implementação inicial
 - **Retomada corretiva:** GPT-6 Luna (`openai/gpt-6-luna#high`), construtor sequencial único, explicitamente autorizado pelo usuário em 2026-11-04 após indisponibilidade por cota de Big Pickle e DeepSeek
-- **Revisão independente:** GPT-6.1 Sol (`openai/gpt-6.1-sol`, agente `reviewer`) pendente após correções
+- **Revisão independente:** GPT-6.1 Sol (`openai/gpt-6.1-sol`, agente `reviewer`), concluída em `f45906d`; apresentação do checkpoint liberada tecnicamente com ressalvas não bloqueantes
 - **Segunda revisão independente:** em `633c38b`, segurança e rollback confirmados; Fase 0 permaneceu bloqueada pelo achado médio de paridade dotenv e apontou refinamento de porta configurada
 - **Aprovação do usuário:** pendente
 - **Fase seguinte:** não iniciada
@@ -295,7 +295,38 @@ não há autoaprovação nem liberação de fase.
   revelou que `scripts/` não estava copiado antes do `postinstall`; o Dockerfile
   foi corrigido e rebuild/smoke completos passaram. Aviso Prisma sobre
   identificação automática de OpenSSL apareceu durante instalação; build e
-  runtime Docker passaram com OpenSSL instalado na imagem final.
+   runtime Docker passaram com OpenSSL instalado na imagem final.
+
+### 5.4 Parecer independente final sobre `f45906d`
+
+O agente `reviewer`, com `openai/gpt-6.1-sol`, liberou tecnicamente a
+apresentação do checkpoint em 2026-11-04. Revisão exclusivamente por inspeção:
+o revisor não executou shell, testes, serviços ou operações no banco. As
+execuções da tabela corretiva são evidências registradas pelo construtor.
+
+- **Bloqueantes anteriores resolvidos:** bind local; política de Host/Origin
+  para as mutações atuais; paridade de carregamento de ambiente com `@next/env`
+  e modo explícito; rollback de Settings diante de falha da auditoria.
+- **Refinamentos confirmados:** porta explicitamente configurada na allowlist
+  preservada, incluindo 80/443; teste de Enter/Escape e retorno de foco mobile.
+- **Ressalva não bloqueante de evidência:** runtime dev lendo
+  `.env.development` não comprovado, conforme as duas tentativas e os limites
+  descritos acima. Não apresentar como aprovado. O pipeline development de
+  preparo/migration, o E2E dev com URL exportada e o runtime dotenv em produção
+  têm evidências distintas.
+- **Achado baixo remanescente:** `src/lib/request-policy.ts:231–240` permite na
+  guarda própria `Host: localhost` com `Origin: http://localhost:9999`, pois
+  deriva a porta ausente do Host da origem recebida. O revisor não identificou
+  bypass da mutação atual de Settings: a validação adicional das Server Actions
+  do Next rejeita a divergência de autoridades. Corrigir a comparação e testar
+  portas padrão/não padrão **antes de reutilizar essa guarda isoladamente em
+  Route Handlers mutáveis**. Encaminhamento ao construtor autorizado permanece
+  registrado; não é condição para apresentar este checkpoint.
+
+O parecer não substitui a aprovação do usuário e não autoriza a Fase 1. As
+contagens e imagens de seções antigas são histórico; a tabela da segunda
+retomada é a evidência mais recente (42 unitários, 19 de integração, 3 HTTP,
+7 E2E aprovados e 1 Docker-only ignorado).
 
 ## 6. Rastreabilidade dos requisitos da fase
 
@@ -319,8 +350,10 @@ não há autoaprovação nem liberação de fase.
 
 ## 7. Pendências e limites conhecidos
 
-- **Revisão independente e aprovação do usuário:** obrigatórias antes da
-  Fase 1.
+- **Revisão independente:** concluída com liberação técnica para apresentação;
+  **aprovação do usuário:** ainda obrigatória e pendente antes da Fase 1.
+- **Ressalvas não bloqueantes:** runtime dev dotenv não comprovado e ajuste
+  recomendado da porta de Origin na guarda própria, conforme a seção 5.4.
 - **Decisões de domínio ainda pendentes:** regras de competência/sobreposição,
   desativação de cadastros, arredondamento de fechamento, pagamentos
   parciais/estornos, reabertura, política de troca de moeda e limites de

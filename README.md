@@ -22,9 +22,16 @@ pnpm dev
 ```
 
 A aplicação fica em <http://127.0.0.1:3000>. Tanto `pnpm dev` quanto `pnpm start`
-escutam somente em `127.0.0.1` no host. O `pnpm dev` prepara o SQLite com
-WAL, `foreign_keys=ON` e `busy_timeout`, aplica as migrations pendentes e inicia
-o Next.js. Não há autenticação no MVP; a exposição padrão é local.
+preparam o SQLite, aplicam as migrations pendentes e escutam somente em
+`127.0.0.1` no host. O ambiente é explicitamente `development` no primeiro e
+`production` no segundo, para que preparo, Prisma e Next usem o mesmo conjunto
+de arquivos dotenv. A porta local pode ser substituída com
+`HORAFLOW_LOCAL_PORT`. Não há autenticação no MVP; a exposição padrão é local.
+
+Scripts Prisma fora do servidor usam `production` como padrão quando
+`NODE_ENV` não está definido, como os demais comandos Next. `pnpm db:migrate:dev`
+define `development`. As variáveis exportadas no processo têm precedência; a
+seleção de arquivos e expansão `$VAR` são feitas por `@next/env`, igual ao Next.
 
 Hosts recebidos são permitidos apenas para loopback por padrão (`127.0.0.1`,
 `localhost` e `[::1]`, em qualquer porta). Para uma implantação privada atrás
@@ -46,7 +53,7 @@ bancos, backups ou uploads em `public/`.
 | --- | --- |
 | `pnpm dev` | Prepara banco, aplica migrations e sobe o Next.js em `127.0.0.1:3000` |
 | `pnpm build` | Gera o Prisma Client e compila a aplicação |
-| `pnpm start` | Inicia a build de produção em `127.0.0.1:3000` |
+| `pnpm start` | Prepara/migra e inicia a build de produção em `127.0.0.1:3000` |
 | `pnpm lint` | ESLint com zero warnings |
 | `pnpm typecheck` | TypeScript estrito, sem emissão |
 | `pnpm test` | Testes unitários (Vitest) |
@@ -55,6 +62,7 @@ bancos, backups ou uploads em `public/`.
 | `pnpm test:e2e` | Playwright em `127.0.0.1:3100` com banco exclusivo |
 | `pnpm verify` | Lint, typecheck, unitários, integração e testes HTTP (inclui build) |
 | `pnpm db:migrate` | Prepara o banco e aplica migrations |
+| `pnpm db:migrate:dev` | Prepara e migra em modo `development` |
 
 Os testes de integração criam bancos descartáveis em
 `/tmp/opencode/horaflow-f0-*`; o E2E usa `horaflow-f0-e2e.db` no mesmo diretório.

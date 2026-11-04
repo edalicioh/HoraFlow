@@ -196,38 +196,20 @@ beforeAll(async () => {
 
   database = createTestDatabase("http-policy");
   prisma = createClient(database.url);
-  await prisma.settings.upsert({
-    where: { id: "singleton" },
-    update: {
-      timezone: "America/Sao_Paulo",
-      defaultHourlyRateCents: 12_345,
-    },
-    create: {
-      id: "singleton",
-      timezone: "America/Sao_Paulo",
-      defaultHourlyRateCents: 12_345,
-    },
-  });
 
   server = spawn(
-    process.execPath,
-    [
-      path.join(projectRoot, "node_modules", "next", "dist", "bin", "next"),
-      "start",
-      "-H",
-      "127.0.0.1",
-      "-p",
-      String(port),
-    ],
+    "pnpm",
+    ["start"],
     {
       cwd: projectRoot,
       env: {
         ...process.env,
-        NODE_ENV: "production",
         DATABASE_URL: database.url,
+        HORAFLOW_LOCAL_PORT: String(port),
         HORAFLOW_TRUSTED_HOSTS: "",
         NEXT_TELEMETRY_DISABLED: "1",
       },
+      detached: process.platform !== "win32",
       stdio: ["ignore", "pipe", "pipe"],
     },
   );
@@ -247,6 +229,14 @@ beforeAll(async () => {
     try {
       const response = await request({ requestPath: "/api/health" });
       if (response.status === 200) {
+        const settingsPage = await request({ requestPath: "/settings" });
+        if (settingsPage.status !== 200) {
+          throw new Error("Settings não foi inicializada pelo servidor de produção.");
+        }
+        await prisma.settings.update({
+          where: { id: "singleton" },
+          data: { timezone: "America/Sao_Paulo", defaultHourlyRateCents: 12_345 },
+        });
         return;
       }
     } catch {
@@ -261,10 +251,18 @@ beforeAll(async () => {
 
 afterAll(async () => {
   if (server && server.exitCode === null) {
-    server.kill("SIGTERM");
+    if (process.platform !== "win32" && server.pid) {
+      process.kill(-server.pid, "SIGTERM");
+    } else {
+      server.kill("SIGTERM");
+    }
     await new Promise<void>((resolve) => {
       const timer = setTimeout(() => {
-        server.kill("SIGKILL");
+        if (process.platform !== "win32" && server.pid) {
+          process.kill(-server.pid, "SIGKILL");
+        } else {
+          server.kill("SIGKILL");
+        }
         resolve();
       }, 5_000);
       server.once("exit", () => {

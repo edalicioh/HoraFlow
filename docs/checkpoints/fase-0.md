@@ -5,6 +5,7 @@
 - **Construtor original:** Big Pickle (`opencode/big-pickle`), implementação inicial
 - **Retomada corretiva:** GPT-6 Luna (`openai/gpt-6-luna#high`), construtor sequencial único, explicitamente autorizado pelo usuário em 2026-11-04 após indisponibilidade por cota de Big Pickle e DeepSeek
 - **Revisão independente:** GPT-6.1 Sol (`openai/gpt-6.1-sol`, agente `reviewer`) pendente após correções
+- **Segunda revisão independente:** em `633c38b`, segurança e rollback confirmados; Fase 0 permaneceu bloqueada pelo achado médio de paridade dotenv e apontou refinamento de porta configurada
 - **Aprovação do usuário:** pendente
 - **Fase seguinte:** não iniciada
 
@@ -21,14 +22,15 @@ revisão independente nem a aprovação explícita do usuário.
 | Diff da fase | `9a00419..5f3ca84` — 75 arquivos, +9105/−2 |
 | Correções após revisão | `e4088dd0b0e02e9e5c0b457ac7982c8e4b39ab73` |
 | Diff corretivo | `33ed65e..e4088dd` — 28 arquivos, +1351/−54 |
+| Retomada da segunda revisão | será registrada em commit corretivo após gates |
 | Migração inicial | `prisma/migrations/20261104093005_init` |
 
 A entrega da fase está no commit `5f3ca84`. Um commit posterior apenas inclui
 este checkpoint. Nenhum remoto foi publicado.
 
 As alterações de coordenação em `AGENTS.md`/`opencode.jsonc` foram feitas pelo
-coordenador e preservadas. Big
-Pickle iniciou as correções, mas ficou sem cota; DeepSeek também ficou
+coordenador e preservadas. Big Pickle iniciou as correções, mas ficou sem cota;
+DeepSeek também ficou
 indisponível por cota e não executou validações. GPT-6 Luna retomou como
 construtor sequencial, sem delegação. A cadeia autorizada e a precedência sobre
 instruções antigas estão emendadas no guia de planejamento.
@@ -59,6 +61,7 @@ As demais decisões de domínio continuam pendentes, conforme a tabela de
 | Node.js | 22.23.2 (requisito `>=22.12.0`) |
 | pnpm | 10.13.1 |
 | Next.js | 16.4.5 |
+| `@next/env` | 16.4.5 (dependência direta para paridade oficial do loader) |
 | React / React DOM | 19.3.1 |
 | TypeScript | 5.9.3 |
 | Prisma / `@prisma/client` | 7.10.1 |
@@ -200,42 +203,77 @@ e evidências desta retomada:
    origem maliciosa igual, origens inválidas, forwarded conflitante, leitura
    local legítima e mutação local legítima. Configuração e documentação em
    `.env.example`/README.
-3. **Média — `.env` do preparo SQLite:** resolução unificada carrega os mesmos
-   arquivos dotenv com precedência para variáveis exportadas. Teste cria projeto
-   isolado onde apenas `.env` define URL relativa não padrão; confirma que só o
-   arquivo esperado foi criado, ausência do banco padrão, diretório `0700`, DB
-   `0600`, WAL e log do preparo com `foreign_keys=1` e `busy_timeout=5000`; Prisma
-   aplica migration nesse mesmo banco.
-4. **Rollback integral de Settings:** teste injeta falha de banco no insert de
+3. **Média — paridade de ambiente `.env*`:** corrigido nesta retomada conforme
+   a segunda revisão. `scripts/load-env.mjs` usa diretamente o `@next/env` da
+   mesma versão do Next, fornecendo ordem, precedência e expansão `$VAR` oficiais.
+   `run-local.mjs` define um modo explícito compartilhado por preparo, Prisma e
+   Next: `development` para `pnpm dev`/`db:migrate:dev`, `production` para
+   `pnpm start`/`db:migrate`; outros comandos sem modo seguem `production` do
+   Next. `pnpm start` agora também prepara e migra antes de iniciar o servidor.
+   Testes em projeto temporário sem `NODE_ENV`: `.env.development` pelo runner
+   real de preparo+Prisma; `.env.production` atravessando `pnpm start`, migration
+   e runtime HTTP; `$DB_DIRECTORY` expandido; precedência de
+   `DATABASE_URL` exportada; somente o DB esperado criado e migration/Settings
+   encontrados no mesmo DB consultado pelo runtime. E2E também chama `pnpm dev`
+   (não `next dev` diretamente) e prova bind loopback.
+4. **Baixa — portas explícitas em hosts confiáveis:** parser agora preserva a
+   distinção entre porta omitida e `:80`/`:443`; portas configuradas são exatas,
+   enquanto hostname configurado sem porta mantém a regra documentada de
+   qualquer porta. Testes cobrem 80, 443, portas divergentes, Origin HTTPS,
+   hostname sem porta e IPv6.
+5. **Rollback integral de Settings:** teste injeta falha de banco no insert de
    auditoria e confirma que timezone, tarifa e contagem de auditoria permanecem
    exatamente como antes da transação.
+
+O loader anterior em `dotenv` foi removido; `@next/env@16.4.5` é dependência
+direta para evitar resolução transitiva acidental. `HORAFLOW_LOCAL_PORT` permite
+portas exclusivas nos testes sem alterar o bind `127.0.0.1`.
 
 Também foram ampliados checks negativos para pagamentos, revisões, ID fixo do
 singleton e FKs, e concorrência de inicialização por conexões SQLite
 independentes. Para contendas temporárias da conexão no upsert, `getSettings`
 repete apenas erro Prisma P1008 até duas vezes; outros erros são propagados.
-Navegação mobile/teclado permanece coberta pelo E2E e o E2E atual passou com
-teste explícito de escuta local.
+O teste mobile agora abre o menu com Enter, fecha com Escape e verifica retorno
+do foco ao summary, além de manter navegação por clique.
 
-Comandos corretivos executados nesta máquina:
+Comandos desta retomada após a segunda revisão:
 
 | Comando / verificação | Resultado |
 | --- | --- |
-| `pnpm install --frozen-lockfile` | Sucesso, lockfile inalterado |
+| `pnpm install --frozen-lockfile` | Sucesso com `@next/env@16.4.5`; lockfile atualizado |
 | `pnpm lint` | Sucesso, zero warnings |
 | `pnpm typecheck` | Sucesso |
-| `pnpm test` | 2 arquivos, 25 testes aprovados |
-| `pnpm test:integration` | 3 arquivos, 16 testes aprovados |
-| `pnpm test:http` | Build produção + 3 testes HTTP aprovados |
-| `LD_LIBRARY_PATH=/tmp/opencode/pw-libs/extracted/usr/lib/x86_64-linux-gnu pnpm test:e2e` | 7 aprovados, 1 Docker-only ignorado; inclui bind real de dev |
-| `DOCKER_CONFIG=/tmp/opencode/docker-anon docker compose -p horaflow-f0 config` | Configuração válida, bind `127.0.0.1` e volume de teste esperado |
-| `DOCKER_CONFIG=/tmp/opencode/docker-anon docker compose -p horaflow-f0 build` | Sucesso após incluir scripts no estágio de dependências |
-| Compose up em porta 3100 + healthcheck | `200 {"status":"ok"}`, contêiner healthy, uid 1001, DB `0600`, rota pública do banco `404` |
-| Recriação de contêiner com volume preservado | Migration sem pendências; Settings permaneceu `America/Sao_Paulo`, BRL, `15000` centavos |
-| `docker compose -p horaflow-f0 stop` | Contêiner próprio parado; volume `horaflow-f0-data` preservado |
+| `pnpm test` | 3 arquivos, 42 testes aprovados (inclui matriz de host/portas) |
+| `pnpm test:integration` | 3 arquivos, 19 testes aprovados; inclui modo development e runtime production dotenv |
+| `pnpm test:http` | Build de produção e 3 testes HTTP aprovados; servidor iniciado pelo `pnpm start` |
+| `LD_LIBRARY_PATH=/tmp/opencode/pw-libs/extracted/usr/lib/x86_64-linux-gnu pnpm test:e2e` | 7 aprovados, 1 Docker-only ignorado; usa `pnpm dev`, inclui bind e teclado/Escape/foco |
+| Compose config/build/smoke e recriação | Config válido, build passou, health 200, uid 1001, Settings persistido em 15000 centavos após recriação, rota DB 404; contêiner parado e volume preservado |
+| Imagem após segunda retomada | `sha256:7188a02e2ce5453a8ce8d2ae20daded894163d74e3c01de3347d00ef74347103` |
 | `git diff --check` | Sem whitespace errors |
 
-### 5.1 Condições específicas desta máquina
+O primeiro teste HTTP após mudar para iniciar via `pnpm start` falhou com
+`database is locked`: o próprio teste inicializava Settings antes de o runner
+executar `migrate deploy` no mesmo SQLite. O setup foi corrigido para deixar o
+runtime inicializar Settings somente após migrations; nova execução de
+`pnpm test:http` passou (3/3).
+
+Uma tentativa inicial de iniciar `pnpm dev` numa cópia temporária com `src` e
+`node_modules` symlinkados abriu a porta, mas não respondeu a `/settings` em 150s;
+o único processo do teste foi parado e o diretório temporário isolado removido.
+O teste de `.env.development` foi então limitado ao pipeline real do runner
+preparação+Prisma; o E2E da aplicação real cobre `pnpm dev` com a URL de teste
+exportada. O runtime com arquivo de ambiente e `$VAR` foi exercitado em produção
+por `pnpm start`. Não alegamos teste de runtime dev lendo `.env.development`.
+
+### Achados da segunda revisão GPT-6.1 Sol
+
+Em `633c38b`, o revisor confirmou resolvidos os dois achados altos (bind/origem e
+rollback integral de Settings) e manteve Fase 0 bloqueada por paridade de
+dotenv. As correções acima abordam a seleção de `.env.development` sem
+`NODE_ENV`, seleção equivalente de produção, expansão de variáveis, precedência
+de valores exportados e porta explícita. Este commit volta à revisão independente;
+não há autoaprovação nem liberação de fase.
+### 5.3 Condições específicas desta máquina
 
 - O host não possui `libasound.so.2`, exigida pelo Chromium do Playwright. O E2E
   foi executado com `LD_LIBRARY_PATH=/tmp/opencode/pw-libs/extracted/usr/lib/x86_64-linux-gnu`,

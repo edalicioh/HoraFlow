@@ -18,13 +18,13 @@ export default defineConfig({
   webServer: externalBaseUrl
     ? undefined
     : {
-        command:
-          "node scripts/prepare-e2e-db.mjs && pnpm exec next dev -p 3100 -H 127.0.0.1",
+        command: "pnpm dev",
         url: "http://127.0.0.1:3100/api/health",
         timeout: 180_000,
         reuseExistingServer: false,
         env: {
           DATABASE_URL: e2eDatabaseUrl,
+          HORAFLOW_LOCAL_PORT: "3100",
           NEXT_TELEMETRY_DISABLED: "1",
         },
       },

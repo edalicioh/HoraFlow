@@ -41,11 +41,19 @@ test("menu mobile navega e fecha", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/dashboard");
 
-  await page.getByLabel("Abrir menu de navegação").click();
+  const menuButton = page.getByLabel("Abrir menu de navegação");
+  await menuButton.focus();
+  await page.keyboard.press("Enter");
   const mobileNav = page.getByRole("navigation", {
     name: "Navegação principal",
   });
 
+  await expect(mobileNav).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(mobileNav).toBeHidden();
+  await expect(menuButton).toBeFocused();
+
+  await menuButton.click();
   await expect(mobileNav).toBeVisible();
   await mobileNav.getByRole("link", { name: "Faturamento" }).click();
   await expect(page).toHaveURL(/\/billing$/);

@@ -1,43 +1,23 @@
-import fs from "node:fs";
-import path from "node:path";
-import { config } from "dotenv";
+import nextEnv from "@next/env";
+
+const { loadEnvConfig } = nextEnv;
+
+const NODE_ENV_VALUES = new Set(["development", "production", "test"]);
 
 /**
- * Carrega os mesmos arquivos de ambiente que o Next.js usa, sem sobrescrever
- * variáveis já exportadas no processo. A ordem segue a documentação do Next:
- * .env.<NODE_ENV>.local, .env.local (exceto em testes), .env.<NODE_ENV> e .env.
+ * Use Next.js's own dotenv selection, precedence, and $VARIABLE expansion.
+ * Commands that have a distinct mode set NODE_ENV before calling this helper;
+ * direct non-Next commands follow Next's default of production.
  */
 export function loadProjectEnv({
   cwd = process.cwd(),
-  nodeEnv = process.env.NODE_ENV,
+  nodeEnv = process.env.NODE_ENV ?? "production",
 } = {}) {
-  const files = [];
-
-  if (nodeEnv) {
-    files.push(`.env.${nodeEnv}.local`);
-  }
-  if (nodeEnv !== "test") {
-    files.push(".env.local");
-  }
-  if (nodeEnv) {
-    files.push(`.env.${nodeEnv}`);
-  }
-  files.push(".env");
-
-  const loaded = [];
-
-  for (const file of files) {
-    const filePath = path.join(cwd, file);
-    if (!fs.existsSync(filePath)) {
-      continue;
-    }
-
-    const result = config({ path: filePath, override: false, quiet: true });
-    if (result.error) {
-      throw result.error;
-    }
-    loaded.push(file);
+  if (!NODE_ENV_VALUES.has(nodeEnv)) {
+    throw new Error(`NODE_ENV inválido: ${nodeEnv}`);
   }
 
-  return loaded;
+  process.env.NODE_ENV = nodeEnv;
+  const { loadedEnvFiles } = loadEnvConfig(cwd, nodeEnv === "development");
+  return loadedEnvFiles.map(({ path }) => path);
 }

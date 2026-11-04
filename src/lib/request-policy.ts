@@ -23,6 +23,8 @@ type ParsedHost = {
   host: string;
   hostname: string;
   port: string;
+  portExplicit: boolean;
+  explicitPort: string;
 };
 
 function parseHostValue(value: string): ParsedHost | null {
@@ -52,6 +54,28 @@ function parseHostValue(value: string): ParsedHost | null {
     }
 
     const hostname = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    let portExplicit = false;
+    let explicitPort = "";
+    if (trimmed.startsWith("[")) {
+      const closingBracket = trimmed.indexOf("]");
+      const suffix = trimmed.slice(closingBracket + 1);
+      if (suffix) {
+        if (!/^:\d+$/.test(suffix)) {
+          return null;
+        }
+        portExplicit = true;
+        explicitPort = String(Number(suffix.slice(1)));
+      }
+    } else {
+      const colon = trimmed.lastIndexOf(":");
+      if (colon !== -1) {
+        if (trimmed.indexOf(":") !== colon || !/^\d+$/.test(trimmed.slice(colon + 1))) {
+          return null;
+        }
+        portExplicit = true;
+        explicitPort = String(Number(trimmed.slice(colon + 1)));
+      }
+    }
 
     if (!hostname) {
       return null;
@@ -61,6 +85,8 @@ function parseHostValue(value: string): ParsedHost | null {
       host: url.host.toLowerCase(),
       hostname,
       port: url.port,
+      portExplicit,
+      explicitPort,
     };
   } catch {
     return null;
@@ -103,8 +129,9 @@ function isTrustedHost(host: ParsedHost, configuredHosts: ParsedHost[]): boolean
     }
 
     // Sem porta explícita, a configuração confia no hostname em qualquer porta.
-    // Com porta, a comparação é exata com o header Host recebido.
-    return configured.port === "" || configured.port === host.port;
+    // Com porta (inclusive :80/:443), a comparação é exata.
+    return !configured.portExplicit ||
+      (host.portExplicit && configured.explicitPort === host.explicitPort);
   });
 }
 
@@ -201,7 +228,17 @@ function validateOrigin(
     return { allowed: false, reason: "invalid_origin" };
   }
 
-  if (parsedOrigin.host.toLowerCase() !== requestHost.host) {
+  const originPort =
+    parsedOrigin.port || (parsedOrigin.protocol === "https:" ? "443" : "80");
+  const requestPort = requestHost.portExplicit
+    ? requestHost.explicitPort
+    : originPort;
+
+  if (
+    parsedOrigin.hostname.toLowerCase().replace(/^\[|\]$/g, "") !==
+      requestHost.hostname ||
+    originPort !== requestPort
+  ) {
     return { allowed: false, reason: "untrusted_origin" };
   }
 

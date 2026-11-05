@@ -280,12 +280,27 @@ export function BillingPeriodDetailPanel({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span
-            className="inline-flex items-center rounded-lg border border-border bg-surface-elevated px-3 py-1.5 text-xs text-muted"
-            title="A exportação de demonstrativos PDF e XLSX será conectada na Fase 4."
+          <a
+            href={`/api/reports/export?reportType=monthly-closings&billingPeriodId=${encodeURIComponent(detail.id)}&format=pdf`}
+            className="inline-flex h-8 items-center rounded-lg border border-border bg-surface-elevated px-3 text-xs font-medium text-foreground transition-colors hover:bg-border/40"
+            data-testid="billing-export-pdf"
           >
-            Exportação PDF / XLSX (Fase 4)
-          </span>
+            Exportar PDF
+          </a>
+          <a
+            href={`/api/reports/export?reportType=monthly-closings&billingPeriodId=${encodeURIComponent(detail.id)}&format=xlsx`}
+            className="inline-flex h-8 items-center rounded-lg border border-border bg-surface-elevated px-3 text-xs font-medium text-foreground transition-colors hover:bg-border/40"
+            data-testid="billing-export-xlsx"
+          >
+            Exportar XLSX
+          </a>
+          <a
+            href={`/api/reports/export?reportType=monthly-closings&billingPeriodId=${encodeURIComponent(detail.id)}&format=csv`}
+            className="inline-flex h-8 items-center rounded-lg border border-border bg-surface-elevated px-3 text-xs font-medium text-foreground transition-colors hover:bg-border/40"
+            data-testid="billing-export-csv"
+          >
+            Exportar CSV
+          </a>
           {detail.canReopen && !showReopenBox ? (
             <Button
               type="button"

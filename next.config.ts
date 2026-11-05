@@ -4,7 +4,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   serverExternalPackages: [
     "@prisma/adapter-better-sqlite3",
+    "@react-pdf/renderer",
     "better-sqlite3",
+    "exceljs",
   ],
   async headers() {
     return [

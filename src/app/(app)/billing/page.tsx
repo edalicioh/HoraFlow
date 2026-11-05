@@ -125,8 +125,17 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
   const allPeriodsForTotals = await listBillingPeriods();
   const totals = computeBillingOverviewTotals(allPeriodsForTotals);
 
+  const matchingPreviewPeriod = previewClientId
+    ? periods.find(
+        (p) =>
+          p.clientId === previewClientId &&
+          p.year === previewYear &&
+          p.month === previewMonth,
+      )
+    : undefined;
   const firstPeriod = periods[0];
-  const targetPeriodId = params.periodId?.trim() || firstPeriod?.id;
+  const targetPeriodId =
+    params.periodId?.trim() || matchingPreviewPeriod?.id || firstPeriod?.id;
 
   let selectedDetail = null;
   if (targetPeriodId) {

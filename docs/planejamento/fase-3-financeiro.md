@@ -1,6 +1,6 @@
 # Fase 3 — Fechamentos, pagamentos e auditoria
 
-**Estado:** concluída e revisada em 2026-11-05 (aguardando aprovação do checkpoint pelo usuário).
+**Estado:** aprovada pelo usuário em 2026-11-05 ([`docs/checkpoints/fase-3.md`](../checkpoints/fase-3.md)).
 **Executor:** Big Pickle (`opencode/big-pickle`) / autorizado em 2026-11-05 no Antigravity: Gemini 4 Argon (Medium) (`inherit`), sequencial.
 **Revisor padrão:** GPT-6.1 Sol (`openai/gpt-6.1-sol`) / autorizado em 2026-11-05 no Antigravity: subagente `reviewer` somente leitura (`inherit`/`pro`) antes do checkpoint.
 **Dependência:** Fase 2 aprovada em 2026-11-05; contratos de schema financeiro definidos na Fase 0.

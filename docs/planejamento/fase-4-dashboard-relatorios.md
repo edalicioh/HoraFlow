@@ -1,10 +1,15 @@
 # Fase 4 — Dashboard e relatórios
 
-**Estado:** não iniciada.  
-**Executor:** Big Pickle (`opencode/big-pickle`).  
-**Revisor padrão:** GPT-6.1 Sol (`openai/gpt-6.1-sol`), independente e somente leitura antes do checkpoint.  
-**Dependência:** Fase 3 aprovada.  
+**Estado:** autorizada em 2026-11-05 (em execução).
+**Executor:** Big Pickle (`opencode/big-pickle`) / autorizado em 2026-11-05 no Antigravity: Gemini 4 Argon (Medium) (`inherit`), sequencial.
+**Revisor padrão:** GPT-6.1 Sol (`openai/gpt-6.1-sol`) / autorizado em 2026-11-05 no Antigravity: subagente `reviewer` somente leitura (`inherit`/`pro`) antes do checkpoint.
+**Dependência:** Fase 3 aprovada em 2026-11-05.
 **Próxima fase:** [Fase 5 — Importação e estabilização](fase-5-importacao-estabilizacao.md).
+
+### Decisões de domínio confirmadas em 2026-11-05
+
+- **Semântica financeira do Dashboard mensal vs. Relatórios:** nos cards do Dashboard mensal da competência selecionada (`YYYY-MM`), usar a semântica de competência: **Recebido da competência** soma os pagamentos ativos (`voidedAt === null`) vinculados aos fechamentos (`CLOSED`) daquela competência (independentemente da data `paidAt`); e **Pendente da competência** separa explicitamente **A faturar** (apontamentos faturáveis `DRAFT`/`APPROVED` ainda não incluídos em fechamento ativo) de **Saldo de fechamentos** (`balanceCents` dos `BillingPeriod`s `CLOSED` da competência), sem dupla contagem de apontamentos já representados em `BillingItem`. No relatório de Pagamentos e Pendências, permitir escolher explicitamente entre filtrar por **período do pagamento (`paidAt`)** ou por **competência do fechamento**.
+- **Limite de linhas por exportação (CSV, XLSX e PDF):** aplicar limite explícito de **10.000 linhas** por exportação, retornando erro claro orientando o usuário a refinar os filtros caso a consulta ultrapasse esse limite (sem truncamento silencioso nem sobrecarga de memória).
 
 ## 1. Objetivo
 

@@ -1,6 +1,6 @@
 # Checkpoint da Fase 3 — Fechamentos, pagamentos e auditoria
 
-- **Status:** CONCLUÍDA E REVISADA — AGUARDANDO APROVAÇÃO DO USUÁRIO
+- **Status:** APROVADA PELO USUÁRIO EM 2026-11-05
 - **Data:** 2026-11-05
 - **Executor de implementação:** Gemini 4 Argon (Medium) (`inherit`), sequencial — autorizado pelo usuário em 2026-11-05 para o ambiente Google Antigravity (onde os IDs de catálogo `opencode/big-pickle`, `opencode/deepseek-v4.1-flash-free#high` e `openai/gpt-6-luna#high` não estão disponíveis).
 - **Revisor independente:** Subagente `reviewer` somente leitura (`bd4d386f-d445-4064-83bf-bd0953159e9a`, `inherit` / Gemini 4 Argon (Medium), sem ferramentas de escrita/shell) — autorizado pelo usuário em 2026-11-05 para o ambiente Google Antigravity em substituição ao ID OpenCode `openai/gpt-6.1-sol`.

@@ -1,9 +1,10 @@
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import Database from "better-sqlite3";
 import ExcelJS from "exceljs";
 import { afterEach, describe, expect, it } from "vitest";
 import { ConflictError } from "@/lib/errors";
+import { closeBillingPeriod } from "@/modules/billing/service";
 import { createClient as createCustomer } from "@/modules/client/service";
 import {
   confirmImportBatch,
@@ -360,7 +361,131 @@ describe("Importação em lote CSV/XLSX e Operações de Backup/Restore (Fase 5)
     expect(confirmed.totalMinutes).toBe(1470);
   });
 
-  it("testa o backup online e restauração consistente de snapshot SQLite (scripts/backup e scripts/restore)", async () => {
+  it("permite alternar entre abas de um XLSX multi-abas na prévia e bloqueia importação em competência fechada (CLOSED)", async () => {
+    const testDb = createTestDatabase("f5-multisheet-and-closed-period");
+    databases.push(testDb);
+    const { prisma } = testDb;
+
+    const client = await createCustomer(
+      { name: "Cliente MultiAba", description: null, hourlyRateCents: 12_000 },
+      prisma,
+    );
+    const project = await createProject(
+      { clientId: client.id, name: "Projeto MultiAba", description: null, hourlyRateCents: 12_000 },
+      prisma,
+    );
+
+    // Cria apontamento inicial em setembro/2026 e fecha a competência 09/2026
+    await prisma.timeEntry.create({
+      data: {
+        projectId: project.id,
+        workDate: "2026-09-05",
+        mode: "DURATION",
+        durationMinutes: 60,
+        description: "Base fechamento setembro",
+        hourlyRateCents: 12_000,
+        amountCents: 12_000,
+        billable: true,
+        status: "DRAFT",
+      },
+    });
+    await closeBillingPeriod(
+      { clientId: client.id, year: 2026, month: 9 },
+      prisma,
+    );
+
+    // Cria planilha XLSX com 2 abas: "Setembro 2026" (fechada) e "Outubro 2026" (aberta)
+    const workbook = new ExcelJS.Workbook();
+    const sheetSet = workbook.addWorksheet("Setembro 2026");
+    sheetSet.addRow(["Data", "Duração", "Descrição"]);
+    sheetSet.addRow(["2026-09-15", "02:00", "Tentativa em mês fechado"]);
+
+    const sheetOut = workbook.addWorksheet("Outubro 2026");
+    sheetOut.addRow(["Data", "Horas", "Atividade"]);
+    sheetOut.addRow(["2026-10-10", "03:00", "Lançamento válido na 2ª aba"]);
+
+    const buffer = Buffer.from(await workbook.xlsx.writeBuffer());
+    const batch = await createImportBatchFromFile(
+      { fileName: "multi-abas.xlsx", fileBuffer: buffer },
+      prisma,
+    );
+
+    expect(batch.sheets).toEqual(["Setembro 2026", "Outubro 2026"]);
+    expect(batch.activeSheet).toBe("Setembro 2026");
+
+    // 1. Prévia na aba Setembro 2026: deve marcar a linha como inválida por competência fechada
+    const previewClosed = await previewImportBatch(
+      {
+        batchId: batch.batchId,
+        mapping: {
+          sheetName: "Setembro 2026",
+          dateColumn: "Data",
+          durationColumn: "Duração",
+          descriptionColumn: "Descrição",
+          dateFormat: "YYYY-MM-DD",
+          durationFormat: "HH:mm",
+          defaultClientId: client.id,
+          defaultProjectId: project.id,
+        },
+      },
+      prisma,
+    );
+
+    expect(previewClosed.validRows).toBe(0);
+    expect(previewClosed.invalidRows).toBe(1);
+    expect(previewClosed.rows[0]?.validationErrors[0]).toContain(
+      "competência 09/2026 deste cliente está fechada",
+    );
+
+    // 2. Alterna na prévia para a aba "Outubro 2026" (que tem colunas "Data", "Horas", "Atividade")
+    const previewOct = await previewImportBatch(
+      {
+        batchId: batch.batchId,
+        mapping: {
+          sheetName: "Outubro 2026",
+          dateColumn: "Data",
+          durationColumn: "Horas",
+          descriptionColumn: "Atividade",
+          dateFormat: "YYYY-MM-DD",
+          durationFormat: "HH:mm",
+          defaultClientId: client.id,
+          defaultProjectId: project.id,
+        },
+      },
+      prisma,
+    );
+
+    expect(previewOct.activeSheet).toBe("Outubro 2026");
+    expect(previewOct.detectedColumns).toEqual(["Data", "Horas", "Atividade"]);
+    expect(previewOct.validRows).toBe(1);
+    expect(previewOct.invalidRows).toBe(0);
+    expect(previewOct.totalMinutes).toBe(180);
+
+    // 3. Se a competência 10/2026 for fechada concorrentemente entre a prévia e a confirmação, confirmImportBatch bloqueia!
+    await prisma.timeEntry.create({
+      data: {
+        projectId: project.id,
+        workDate: "2026-10-01",
+        mode: "DURATION",
+        durationMinutes: 60,
+        description: "Fechamento concorrente",
+        hourlyRateCents: 12_000,
+        amountCents: 12_000,
+        billable: true,
+        status: "DRAFT",
+      },
+    });
+    await closeBillingPeriod(
+      { clientId: client.id, year: 2026, month: 10 },
+      prisma,
+    );
+
+    await expect(
+      confirmImportBatch({ batchId: batch.batchId }, prisma),
+    ).rejects.toThrow(ConflictError);
+  });
+
+  it("testa o backup online e restauração consistente de snapshot SQLite (scripts/backup.sh e scripts/restore.sh)", async () => {
     const testDb = createTestDatabase("f5-backup-restore");
     databases.push(testDb);
     const { prisma } = testDb;
@@ -370,18 +495,29 @@ describe("Importação em lote CSV/XLSX e Operações de Backup/Restore (Fase 5)
       prisma,
     );
 
-    // Gera backup do banco de teste
-    const backupDir = path.resolve("/tmp/opencode", "test-backups");
-    if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
+    // Diretório temporário para os snapshots gerados pelo script real
+    const backupDir = path.resolve(
+      "/tmp/opencode",
+      `test-backups-${Date.now()}`,
+    );
+    fs.mkdirSync(backupDir, { recursive: true });
 
-    const backupFilePath = path.join(backupDir, `snapshot-test-${Date.now()}.db`);
+    const envWithDb = {
+      ...process.env,
+      DATABASE_URL: testDb.url,
+    };
 
-    // Usa a Better-SQLite3 backup API direta
-    const rawSqlite = new Database(testDb.filePath);
-    await rawSqlite.backup(backupFilePath);
-    rawSqlite.close();
+    // Executa scripts/backup.sh passando backupDir como argumento posicional
+    execFileSync("sh", ["scripts/backup.sh", backupDir], {
+      cwd: process.cwd(),
+      env: envWithDb,
+    });
 
-    expect(fs.existsSync(backupFilePath)).toBe(true);
+    const files = fs
+      .readdirSync(backupDir)
+      .filter((f) => f.startsWith("horaflow-backup-") && f.endsWith(".db"));
+    expect(files.length).toBe(1);
+    const backupFilePath = path.join(backupDir, files[0]!);
     expect(fs.statSync(backupFilePath).size).toBeGreaterThan(0);
 
     // Faz uma mutação posterior no banco original
@@ -392,13 +528,13 @@ describe("Importação em lote CSV/XLSX e Operações de Backup/Restore (Fase 5)
     const clientsCountBeforeRestore = await prisma.client.count();
     expect(clientsCountBeforeRestore).toBe(2);
 
-    // Executa restauração do snapshot anterior:
-    // Deve desconectar conexões ativas e remover -wal / -shm residuais
+    // Desconecta o Prisma antes de rodar scripts/restore.sh
     await prisma.$disconnect();
-    const targetFile = testDb.filePath;
-    if (fs.existsSync(`${targetFile}-wal`)) fs.unlinkSync(`${targetFile}-wal`);
-    if (fs.existsSync(`${targetFile}-shm`)) fs.unlinkSync(`${targetFile}-shm`);
-    fs.copyFileSync(backupFilePath, targetFile);
+
+    execFileSync("sh", ["scripts/restore.sh", backupFilePath], {
+      cwd: process.cwd(),
+      env: envWithDb,
+    });
 
     // Reabre nova conexão para ler do arquivo restaurado
     const restoredPrisma = createClient(testDb.url);
@@ -407,6 +543,6 @@ describe("Importação em lote CSV/XLSX e Operações de Backup/Restore (Fase 5)
     expect(restoredCount).toBe(1);
 
     // Limpeza
-    if (fs.existsSync(backupFilePath)) fs.unlinkSync(backupFilePath);
+    fs.rmSync(backupDir, { recursive: true, force: true });
   });
 });

@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma as defaultDb } from "@/lib/db";
 import { ConflictError, NotFoundError, ValidationError } from "@/lib/errors";
+import { calculateTimeEntryAmountCents } from "@/lib/money";
 import { resolveHourlyRateWithSource } from "@/lib/rates";
 import { withSqliteWriteTransaction } from "@/lib/sqlite-transaction";
 import { recordAuditLog } from "@/modules/audit/service";
@@ -259,10 +260,13 @@ export async function createImportBatchFromFile(
   const cleanFileName = input.fileName.trim();
   const lowerName = cleanFileName.toLowerCase();
 
-  const isXlsx =
-    input.format === "xlsx" ||
-    lowerName.endsWith(".xlsx") ||
-    lowerName.endsWith(".xlsm");
+  if (lowerName.endsWith(".xlsm")) {
+    throw new ValidationError(
+      "Planilhas com macros (.xlsm) não são permitidas por segurança. Exporte como .xlsx ou .csv.",
+    );
+  }
+
+  const isXlsx = input.format === "xlsx" || lowerName.endsWith(".xlsx");
   const isCsv =
     input.format === "csv" ||
     lowerName.endsWith(".csv") ||
@@ -281,6 +285,7 @@ export async function createImportBatchFromFile(
   let activeSheet = "Principal";
   let detectedColumns: string[] = [];
   let rawRows: ParsedRawRow[] = [];
+  let sheetsData: StoredBatchPayload["sheetsData"];
 
   if (format === "csv") {
     const parsed = parseCsvContent(input.fileBuffer);
@@ -292,6 +297,7 @@ export async function createImportBatchFromFile(
     activeSheet = parsed.activeSheet;
     detectedColumns = parsed.headers;
     rawRows = parsed.rows;
+    sheetsData = parsed.sheetsData;
   }
 
   const payload: StoredBatchPayload = {
@@ -302,6 +308,7 @@ export async function createImportBatchFromFile(
     activeSheet,
     detectedColumns,
     rawRows,
+    sheetsData,
   };
 
   const created = await database.importBatch.create({
@@ -363,6 +370,69 @@ export async function previewImportBatch(
     );
   }
 
+  // Se o arquivo for XLSX multi-abas e o usuário selecionou outra aba:
+  if (mapping.sheetName && payload.sheetsData) {
+    const targetSheetData = payload.sheetsData[mapping.sheetName];
+    if (!targetSheetData) {
+      throw new ValidationError(
+        `A aba "${mapping.sheetName}" não foi encontrada na planilha.`,
+      );
+    }
+
+    const sheetChanged = payload.activeSheet !== mapping.sheetName;
+    payload.activeSheet = mapping.sheetName;
+    payload.detectedColumns = targetSheetData.headers;
+    payload.rawRows = targetSheetData.rows;
+
+    if (sheetChanged) {
+      if (!payload.detectedColumns.includes(mapping.dateColumn)) {
+        mapping.dateColumn =
+          payload.detectedColumns.find((c) => /data|date|dia/i.test(c)) ??
+          payload.detectedColumns[0] ??
+          mapping.dateColumn;
+      }
+      if (!payload.detectedColumns.includes(mapping.durationColumn)) {
+        mapping.durationColumn =
+          payload.detectedColumns.find((c) =>
+            /dura[çc]|horas|tempo|duration|hours/i.test(c),
+          ) ??
+          payload.detectedColumns[1] ??
+          mapping.durationColumn;
+      }
+      if (
+        mapping.descriptionColumn &&
+        !payload.detectedColumns.includes(mapping.descriptionColumn)
+      ) {
+        mapping.descriptionColumn =
+          payload.detectedColumns.find((c) =>
+            /descri|tarefa|atividade|memo|note/i.test(c),
+          ) ?? null;
+      }
+      if (
+        mapping.billableColumn &&
+        !payload.detectedColumns.includes(mapping.billableColumn)
+      ) {
+        mapping.billableColumn =
+          payload.detectedColumns.find((c) => /fatur|billable/i.test(c)) ??
+          null;
+      }
+    }
+  }
+
+  if (!payload.detectedColumns.includes(mapping.dateColumn)) {
+    throw new ValidationError(
+      `A coluna de data "${mapping.dateColumn}" não existe na aba "${payload.activeSheet}".`,
+      { dateColumn: ["Selecione uma coluna de data existente na aba."] },
+    );
+  }
+
+  if (!payload.detectedColumns.includes(mapping.durationColumn)) {
+    throw new ValidationError(
+      `A coluna de duração "${mapping.durationColumn}" não existe na aba "${payload.activeSheet}".`,
+      { durationColumn: ["Selecione uma coluna de duração existente na aba."] },
+    );
+  }
+
   // Valida cliente e projeto
   const project = await database.project.findUnique({
     where: { id: mapping.defaultProjectId },
@@ -386,6 +456,23 @@ export async function previewImportBatch(
       "O cliente e o projeto selecionados devem estar ativos para importar apontamentos.",
     );
   }
+
+  // Busca competências fechadas (BillingPeriod.status = CLOSED) deste cliente
+  const closedPeriods = await database.billingPeriod.findMany({
+    where: {
+      clientId: project.client.id,
+      status: "CLOSED",
+    },
+    select: {
+      year: true,
+      month: true,
+    },
+  });
+  const closedCompetencies = new Set(
+    closedPeriods.map(
+      (bp) => `${bp.year}-${String(bp.month).padStart(2, "0")}`,
+    ),
+  );
 
   const settings = await database.settings.findFirst();
   const defaultRateCents = settings?.defaultHourlyRateCents ?? 0;
@@ -457,6 +544,16 @@ export async function previewImportBatch(
     }
 
     const workDate = dateResult.date;
+    if (workDate) {
+      const yearMonth = workDate.slice(0, 7);
+      if (closedCompetencies.has(yearMonth)) {
+        const [yearStr, monthStr] = yearMonth.split("-");
+        validationErrors.push(
+          `A competência ${monthStr}/${yearStr} deste cliente está fechada. Reabra o fechamento mensal antes de importar lançamentos nesta competência.`,
+        );
+      }
+    }
+
     const durationMinutes = durationResult.minutes;
     const description =
       rawDesc !== null && rawDesc !== undefined
@@ -465,8 +562,12 @@ export async function previewImportBatch(
     const billable = normalizeImportBillable(rawBillable);
 
     let amountCents = 0;
-    if (durationMinutes && billable) {
-      amountCents = Math.round((durationMinutes * hourlyRateCents) / 60);
+    if (durationMinutes && durationMinutes > 0) {
+      amountCents = calculateTimeEntryAmountCents({
+        durationMinutes,
+        hourlyRateCents,
+        billable,
+      });
     }
 
     const isValid = validationErrors.length === 0;
@@ -642,6 +743,46 @@ export async function confirmImportBatch(
       throw new ConflictError(
         "Nenhum apontamento selecionado para importação (todas as linhas são inválidas ou foram ignoradas como duplicatas).",
       );
+    }
+
+    // Revalida dentro da transação SQLite se o cliente e o projeto permanecem ativos
+    const targetProjectId = rowsToImport[0]!.projectId;
+    const project = await tx.project.findUnique({
+      where: { id: targetProjectId },
+      include: { client: true },
+    });
+
+    if (!project || !project.active || !project.client.active) {
+      throw new ConflictError(
+        "O cliente ou projeto de destino foi desativado antes da confirmação do lote.",
+      );
+    }
+
+    // Revalida dentro da transação SQLite se alguma competência das linhas foi fechada concorrentemente
+    const closedPeriods = await tx.billingPeriod.findMany({
+      where: {
+        clientId: project.client.id,
+        status: "CLOSED",
+      },
+      select: {
+        year: true,
+        month: true,
+      },
+    });
+    const closedCompetencies = new Set(
+      closedPeriods.map(
+        (bp) => `${bp.year}-${String(bp.month).padStart(2, "0")}`,
+      ),
+    );
+
+    for (const row of rowsToImport) {
+      const ym = row.workDate!.slice(0, 7);
+      if (closedCompetencies.has(ym)) {
+        const [yearStr, monthStr] = ym.split("-");
+        throw new ConflictError(
+          `A competência ${monthStr}/${yearStr} do cliente "${project.client.name}" está fechada. Reabra o fechamento mensal antes de confirmar a importação.`,
+        );
+      }
     }
 
     // Insere apontamentos vinculados ao lote

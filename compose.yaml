@@ -10,7 +10,7 @@ services:
     restart: unless-stopped
     init: true
     ports:
-      - "127.0.0.1:${HORFLOW_PORT:-3000}:3000"
+      - "127.0.0.1:${HORAFLOW_PORT:-${HORFLOW_PORT:-3000}}:3000"
     environment:
       DATABASE_URL: file:/data/horaflow.db
       NODE_ENV: production

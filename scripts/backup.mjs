@@ -3,20 +3,37 @@
 import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
-import { resolveDatabaseUrl } from "./database-url.mjs";
-import { loadEnvironment } from "./load-env.mjs";
+import { resolveDatabaseFile } from "./database-url.mjs";
+import { loadProjectEnv } from "./load-env.mjs";
 
-loadEnvironment("production");
+loadProjectEnv();
 
-const resolved = resolveDatabaseUrl();
-const dbPath = resolved.filePath;
+const configuredUrl = process.env.DATABASE_URL ?? "file:./data/horaflow.db";
+const dbPath = resolveDatabaseFile(configuredUrl);
 
 if (!fs.existsSync(dbPath)) {
   console.error(`[backup] Erro: Banco de dados não encontrado em "${dbPath}".`);
   process.exit(1);
 }
 
-const backupDir = process.env.HORAFLOW_BACKUP_DIR || path.resolve(process.cwd(), "backups");
+const customArgDir = process.argv[2]?.trim();
+const rawBackupDir =
+  customArgDir ||
+  process.env.HORAFLOW_BACKUP_DIR ||
+  path.join("data", "backups");
+const backupDir = path.resolve(process.cwd(), rawBackupDir);
+const publicDir = path.resolve(process.cwd(), "public");
+
+if (
+  backupDir === publicDir ||
+  backupDir.startsWith(`${publicDir}${path.sep}`)
+) {
+  console.error(
+    `[backup] Erro de segurança: O diretório de backup não pode ficar dentro de "public/" (${backupDir}).`,
+  );
+  process.exit(1);
+}
+
 if (!fs.existsSync(backupDir)) {
   fs.mkdirSync(backupDir, { recursive: true, mode: 0o700 });
 }

@@ -3,10 +3,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
-import { resolveDatabaseUrl } from "./database-url.mjs";
-import { loadEnvironment } from "./load-env.mjs";
+import { resolveDatabaseFile } from "./database-url.mjs";
+import { loadProjectEnv } from "./load-env.mjs";
 
-loadEnvironment("production");
+loadProjectEnv();
 
 const args = process.argv.slice(2);
 const backupSource = args[0];
@@ -22,8 +22,8 @@ if (!fs.existsSync(resolvedBackupPath)) {
   process.exit(1);
 }
 
-const resolved = resolveDatabaseUrl();
-const targetDbPath = resolved.filePath;
+const configuredUrl = process.env.DATABASE_URL ?? "file:./data/horaflow.db";
+const targetDbPath = resolveDatabaseFile(configuredUrl);
 const targetDbDir = path.dirname(targetDbPath);
 
 console.log(`[restore] Validando snapshot de backup "${resolvedBackupPath}"...`);

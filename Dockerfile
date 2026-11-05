@@ -20,6 +20,9 @@ COPY . .
 RUN pnpm build
 
 FROM base AS prod-deps
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends python3 make g++ ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml prisma.config.ts ./
 COPY prisma ./prisma
 COPY scripts ./scripts

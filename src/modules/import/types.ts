@@ -80,6 +80,14 @@ export type ImportConfirmationResult = {
   insertedEntryIds: string[];
 };
 
+export type StoredBatchSheetsData = Record<
+  string,
+  {
+    headers: string[];
+    rows: ParsedRawRow[];
+  }
+>;
+
 export type StoredBatchPayload = {
   fileName: string;
   fileHash: string;
@@ -88,6 +96,7 @@ export type StoredBatchPayload = {
   activeSheet: string;
   detectedColumns: string[];
   rawRows: ParsedRawRow[];
+  sheetsData?: StoredBatchSheetsData;
   mapping?: ColumnMapping;
   validatedRows?: ValidatedImportRow[];
 };

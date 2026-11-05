@@ -92,7 +92,11 @@ Confirmadas explicitamente antes do início da Fase 2:
 - **Novos lançamentos e edições em competência fechada ou faturada:** bloquear criação, edição e exclusão de apontamentos quando a competência correspondente (`cliente + ano/mês` de `workDate`) estiver com `BillingPeriod.status = CLOSED`, ou quando o próprio apontamento estiver faturado (`status !== DRAFT` ou com `BillingItem` ativo `releasedAt IS NULL`).
 - **Tarifa e vínculo ao editar apontamento:** na edição de apontamentos `DRAFT`, preservar por padrão o snapshot `hourlyRateCents` já gravado salvo alteração explícita pelo usuário, e permitir manter o `projectId` original mesmo que o cliente ou projeto tenha sido inativado posteriormente (bloqueando apenas novos apontamentos ou a troca para outro projeto/cliente inativo).
 
-As demais linhas desta seção continuam pendentes e devem ser confirmadas no momento indicado. Uma pendência não relacionada não impede trabalho independente; não criar migrations ou contratos irreversíveis que dependam de resposta ainda não obtida.
+### 4.4. Decisões aprovadas pelo usuário em 2026-11-05 (Fases 3, 4 e 5)
+
+- **Fechamento vazio/valor zero e motivo de reabertura/estorno (Fase 3):** bloqueio de fechamento sem itens elegíveis (`totalMinutes = 0`); permissão de fechamento com horas faturáveis de tarifa zero (`totalMinutes > 0`, `totalCents = 0`); e exigência de justificativa obrigatória (`reason`, mínimo 3 caracteres) para reabertura de fechamento e estorno de pagamento, registrada no `AuditLog`.
+- **Dashboard e relatórios (Fase 4):** separação explícita no dashboard entre "A faturar (rascunho)" e "Saldo de fechamentos" sem dupla contagem; alternância explícita entre `PAID_AT` e `COMPETENCE` no relatório de pagamentos; e limite seguro de exportação (`MAX_EXPORT_ROWS = 10_000`).
+- **Importação e operação (Fase 5):** limite de 5 MiB por arquivo, 5.000 linhas por lote e 25 MiB descompactados para XLSX (com rejeição de PDFs/binários disfarçados e macros VBA); detecção de duplicidades via fingerprint SHA-256 com opção explícita `importDuplicates`; bloqueio por padrão de linhas inválidas com opção explícita `skipInvalidRows` (RF10); bloqueio de importação em competência fechada (`BillingPeriod.status = CLOSED`) na prévia e na confirmação transacional; e validação do cenário de outubro/2026 (9 registros e 24h30 / 1470 minutos) com fixture sintética controlada enquanto aguarda o fornecimento da planilha física original pelo usuário.
 
 ## 5. Construtor, revisor e coordenador
 
@@ -219,11 +223,9 @@ Gates comuns: instalação com lockfile, lint, TypeScript, unitários, integraç
 
 ## 8. Estado atual e próxima ação
 
-- Os seis arquivos de fase foram preparados; nenhuma fase de construção está concluída.
-- Nenhum repositório/commit, worktree, banco, dependência ou contêiner foi criado por esta entrega de planejamento.
-- Antes da definição dos papéis separados, subagentes Big Pickle fizeram uma análise textual inicial do planejamento, sem implementação. Isso não conta como revisão independente dos checkpoints; as revisões passam a usar GPT-6.1 Sol.
-- O próximo passo é abrir/selecionar o construtor Big Pickle e autorizar explicitamente a Fase 0.
-- A fonte histórica pode ser fornecida antes; não é necessária para o scaffold, mas é necessária para o aceite real de importação.
+- Todas as fases de construção técnica (Fases 0 a 5) foram implementadas, testadas (`pnpm verify`, `pnpm test:e2e` e smoke test Docker) e revisadas independentemente pelo subagente `reviewer` (`docs/checkpoints/fase-0.md` a `docs/checkpoints/fase-5.md`).
+- O cenário representativo de outubro/2026 (**9 registros e 24h30 / 1470 minutos**) foi validado com dados sintéticos em `tests/integration/import-batch.test.ts`.
+- **Próxima ação:** homologação do checkpoint `docs/checkpoints/fase-5.md` pelo usuário e fornecimento da planilha original de outubro/2026 para conferência do aceite histórico real definitivo.
 
 ## 9. Referências verificadas
 

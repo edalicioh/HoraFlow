@@ -56,6 +56,14 @@ describe("Módulo de Importação — Analisadores e Normalizadores (Fase 5)", (
       expect(() => parseCsvContent(emptyBuffer)).toThrow(ValidationError);
     });
 
+    it("rejeita arquivo PDF ou binário disfarçado de CSV", () => {
+      const pdfDisguised = Buffer.from("%PDF-1.7\n1 0 obj\n<<>>\nendobj", "utf-8");
+      expect(() => parseCsvContent(pdfDisguised)).toThrow(ValidationError);
+
+      const binaryWithNull = Buffer.from("Data;Duração\0\x002026-10-01;01:00", "utf-8");
+      expect(() => parseCsvContent(binaryWithNull)).toThrow(ValidationError);
+    });
+
     it("rejeita arquivo com mais de MAX_IMPORT_ROWS (5.000 linhas)", () => {
       const lines = ["Data;Duração;Descrição"];
       for (let i = 0; i < MAX_IMPORT_ROWS + 10; i++) {
@@ -95,6 +103,12 @@ describe("Módulo de Importação — Analisadores e Normalizadores (Fase 5)", (
       expect(parsedSheet2.activeSheet).toBe("Novembro 2026");
       expect(parsedSheet2.rows).toHaveLength(1);
       expect(parsedSheet2.rows[0]?.cells["Data"]).toBe("2026-11-01");
+      expect(parsedSheet1.sheetsData["Novembro 2026"]?.rows).toHaveLength(1);
+    });
+
+    it("rejeita arquivo não-XLSX ou corrompido", async () => {
+      const fakeXlsx = Buffer.from("%PDF-1.5 fake xlsx content", "utf-8");
+      await expect(parseXlsxContent(fakeXlsx)).rejects.toThrow(ValidationError);
     });
   });
 

@@ -127,8 +127,8 @@ O projeto conta com automação abrangente de testes:
 |---|---|
 | `pnpm lint` | Verificação de código com ESLint (0 avisos tolerados) |
 | `pnpm typecheck` | Checagem estrita de tipos TypeScript (`tsc --noEmit`) |
-| `pnpm test` | Testes unitários (135 testes com Vitest) |
-| `pnpm test:integration` | Testes de integração concorrentes com SQLite real (42 testes) |
+| `pnpm test` | Testes unitários (137 testes com Vitest) |
+| `pnpm test:integration` | Testes de integração concorrentes com SQLite real (43 testes) |
 | `pnpm test:http` | Build de produção Next.js e validação de segurança HTTP |
 | `pnpm test:e2e` | 14 cenários ponta a ponta com Playwright em navegador real |
 | `pnpm verify` | Execução completa de lint, tipos, unitários, integração e HTTP |

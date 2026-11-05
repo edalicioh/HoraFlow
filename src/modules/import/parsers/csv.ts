@@ -53,6 +53,29 @@ export function parseCsvContent(
     );
   }
 
+  // Rejeita arquivos binários, PDFs ou ZIP/XLSX disfarçados de CSV
+  if (
+    rawBuffer.length >= 4 &&
+    ((rawBuffer[0] === 0x25 &&
+      rawBuffer[1] === 0x50 &&
+      rawBuffer[2] === 0x44 &&
+      rawBuffer[3] === 0x46) || // %PDF
+      (rawBuffer[0] === 0x50 &&
+        rawBuffer[1] === 0x4b &&
+        rawBuffer[2] === 0x03 &&
+        rawBuffer[3] === 0x04)) // PK.. (ZIP/XLSX)
+  ) {
+    throw new ValidationError(
+      "O conteúdo do arquivo não corresponde a um CSV textual válido (arquivo binário ou PDF/ZIP detectado).",
+    );
+  }
+
+  if (rawBuffer.includes(0x00)) {
+    throw new ValidationError(
+      "O arquivo contém bytes nulos (binário) ou codificação incompatível com UTF-8.",
+    );
+  }
+
   let text = rawBuffer.toString("utf-8");
   if (text.charCodeAt(0) === 0xfeff) {
     text = text.slice(1);

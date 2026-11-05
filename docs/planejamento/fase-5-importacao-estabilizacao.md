@@ -1,8 +1,8 @@
 # Fase 5 — Importação e estabilização
 
-**Estado:** Concluída (implementada, verificada em todas as suítes e revisada independentemente).  
-**Executor:** Gemini 4 Argon (Medium) (`inherit`), autorizado pelo usuário para execução sequencial no ambiente Google Antigravity (`AGENTS.md`).  
-**Revisor padrão:** Subagente `reviewer` (`bd4d386f-d445-4064-83bf-bd0953159e9a`), independente e somente leitura antes do checkpoint.  
+**Estado:** Concluída (implementada, verificada em todas as suítes e revisada independentemente).
+**Executor:** Gemini 4 Argon (Medium) (`inherit`), autorizado pelo usuário para execução sequencial no ambiente Google Antigravity (`AGENTS.md`).
+**Revisor padrão:** Subagente `reviewer` (`f73d3ec5-9574-4163-831f-932f34dfd794`), independente e somente leitura antes do checkpoint.
 **Dependência:** Fase 4 aprovada; validação histórica de outubro/2026 (9 registros e 24h30 / 1470 minutos) executada com cenário sintético controlado e pronta para receber o arquivo real do usuário.
 
 ## 1. Objetivo
@@ -59,7 +59,7 @@ O cenário representativo de outubro/2026 com **9 registros e 24h30 (1470 minuto
 - [x] Idempotência na confirmação: segunda confirmação do mesmo lote não duplica apontamentos.
 - [x] Rollback integral em caso de qualquer falha na transação.
 - [x] Vínculo dos apontamentos criados ao lote (`importBatchId`).
-- [x] Registro auditável no `AuditLog` (`IMPORT_BATCH_CONFIRMED`).
+- [x] Registro auditável no `AuditLog` (`entity: "ImportBatch"`, `action: "IMPORT"`).
 
 ## 4. Backup e restauração
 
@@ -77,9 +77,10 @@ O cenário representativo de outubro/2026 com **9 registros e 24h30 (1470 minuto
 - [x] Foco, acessibilidade por teclado, tema escuro e responsividade validados em E2E.
 - [x] Servidor sem login, bind restrito a loopback local.
 
-## 6. Matriz de testes
+## 6. Matriz de testes e critérios de aceite final
 
-- [x] `tests/unit/import-parsers.test.ts`: 12 testes unitários de parsers CSV/XLSX, normalizadores e fingerprints.
-- [x] `tests/integration/import-batch.test.ts`: 5 testes de integração com ciclo completo de lote, duplicidades, `skipInvalidRows`, cenário de outubro/2026 (9 registros e 24h30) e backup/restauração WAL.
+- [x] `tests/unit/import-parsers.test.ts`: 14 testes unitários de parsers CSV/XLSX, rejeição de PDF/binários/macros disfarçados, normalizadores e fingerprints.
+- [x] `tests/integration/import-batch.test.ts`: 6 testes de integração com ciclo completo de lote, duplicidades, `skipInvalidRows`, alternância de abas em XLSX multi-abas, bloqueio de competência fechada (`BillingPeriod.status = CLOSED`) na prévia e na confirmação transacional, cenário sintético de outubro/2026 (9 registros e 24h30) e execução real de `scripts/backup.sh` e `scripts/restore.sh` em modo WAL.
 - [x] `tests/e2e/import.spec.ts`: Teste E2E cobrindo upload de arquivo CSV, mapeamento, prévia, confirmação transacional e reflexo imediato no `/timesheet` e `/dashboard`.
-- [x] Todas as suítes anteriores executadas com 100% de aprovação (`pnpm verify` e `pnpm test:e2e`).
+- [x] Todas as suítes executadas com 100% de aprovação (`pnpm verify`: 137 unitários, 43 integração SQLite, 3 HTTP + `pnpm test:e2e`: 14 cenários E2E incluindo persistência após recriação do contêiner Docker).
+- [ ] Aceite histórico real com a planilha física original de outubro/2026 (9 registros e 1470 minutos / 24h30): **aguardando fornecimento do arquivo original pelo usuário** (o cenário sintético equivalente está validado e aprovado, mas conforme `AGENTS.md` não substitui a conferência contra a fonte real).

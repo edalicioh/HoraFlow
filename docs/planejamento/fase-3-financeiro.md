@@ -1,6 +1,6 @@
 # Fase 3 — Fechamentos, pagamentos e auditoria
 
-**Estado:** autorizada em 2026-11-05 (em execução).
+**Estado:** concluída e revisada em 2026-11-05 (aguardando aprovação do checkpoint pelo usuário).
 **Executor:** Big Pickle (`opencode/big-pickle`) / autorizado em 2026-11-05 no Antigravity: Gemini 4 Argon (Medium) (`inherit`), sequencial.
 **Revisor padrão:** GPT-6.1 Sol (`openai/gpt-6.1-sol`) / autorizado em 2026-11-05 no Antigravity: subagente `reviewer` somente leitura (`inherit`/`pro`) antes do checkpoint.
 **Dependência:** Fase 2 aprovada em 2026-11-05; contratos de schema financeiro definidos na Fase 0.
@@ -59,11 +59,11 @@ Estado de pagamento é derivado: sem pagamento, parcial ou quitado. Não criar o
 
 ### 4.1. Prévia
 
-- [ ] Selecionar cliente, ano e mês.
-- [ ] Consultar apontamentos ativos faturáveis da competência, conforme política de `workDate`.
-- [ ] Exibir itens, total de minutos, valores e tarifa aplicada por item.
-- [ ] Identificar ausência de itens, registros já vinculados e conflitos de estado.
-- [ ] Não permitir que a interface imponha totais arbitrários ao servidor.
+- [x] Selecionar cliente, ano e mês.
+- [x] Consultar apontamentos ativos faturáveis da competência, conforme política de `workDate`.
+- [x] Exibir itens, total de minutos, valores e tarifa aplicada por item.
+- [x] Identificar ausência de itens, registros já vinculados e conflitos de estado.
+- [x] Não permitir que a interface imponha totais arbitrários ao servidor.
 
 ### 4.2. Confirmação atômica
 
@@ -82,15 +82,15 @@ Falha em qualquer etapa implica rollback integral. Duplo clique e duas confirma�
 
 ## 5. Reabertura
 
-- [ ] Permitir somente a partir de `CLOSED` e **sem qualquer pagamento ativo** associado.
-- [ ] Verificar bloqueio e alterar estado dentro da mesma transação; não basta checar antes de abri-la.
-- [ ] Confirmar a ação e informar impacto na cobrança.
-- [ ] Liberar os itens ativos conforme estratégia de histórico aprovada; nunca perder a versão anterior inadvertidamente.
-- [ ] Retornar entradas a `DRAFT`, pois não existe fluxo explícito de aprovação.
-- [ ] Marcar período `REOPENED`, preservando snapshots e informação do fechamento anterior na forma aprovada.
-- [ ] Relatórios/saldos de cobrança ativa não contam período reaberto como dívida fechada atual.
-- [ ] Refechamento recalcula a seleção e totais da nova versão, mantendo histórico.
-- [ ] Pagamentos estornados permanecem consultáveis e não bloqueiam reabertura.
+- [x] Permitir somente a partir de `CLOSED` e **sem qualquer pagamento ativo** associado.
+- [x] Verificar bloqueio e alterar estado dentro da mesma transação; não basta checar antes de abri-la.
+- [x] Confirmar a ação e informar impacto na cobrança.
+- [x] Liberar os itens ativos conforme estratégia de histórico aprovada; nunca perder a versão anterior inadvertidamente.
+- [x] Retornar entradas a `DRAFT`, pois não existe fluxo explícito de aprovação.
+- [x] Marcar período `REOPENED`, preservando snapshots e informação do fechamento anterior na forma aprovada.
+- [x] Relatórios/saldos de cobrança ativa não contam período reaberto como dívida fechada atual.
+- [x] Refechamento recalcula a seleção e totais da nova versão, mantendo histórico.
+- [x] Pagamentos estornados permanecem consultáveis e não bloqueiam reabertura.
 
 ## 6. Recebimentos e estornos
 
@@ -98,20 +98,20 @@ Falha em qualquer etapa implica rollback integral. Duplo clique e duas confirma�
 
 ### Pagamento
 
-- [ ] Aceitar somente em período `CLOSED`.
-- [ ] Validar valor inteiro positivo, data e método/observação limitados.
-- [ ] Na transação, obter total fechado e soma de pagamentos ativos da versão atual.
-- [ ] Rejeitar `somaAtiva + novo > totalCents`; não permitir crédito/sobrepagamento no MVP.
-- [ ] Criar pagamento e auditoria atomicamente.
-- [ ] Tratar envio duplicado com identificador de operação persistido ou mecanismo idempotente equivalente; não deduzir duplicidade por valor/data, pois parcelas iguais podem ser legítimas.
+- [x] Aceitar somente em período `CLOSED`.
+- [x] Validar valor inteiro positivo, data e método/observação limitados.
+- [x] Na transação, obter total fechado e soma de pagamentos ativos da versão atual.
+- [x] Rejeitar `somaAtiva + novo > totalCents`; não permitir crédito/sobrepagamento no MVP.
+- [x] Criar pagamento e auditoria atomicamente.
+- [x] Tratar envio duplicado com identificador de operação persistido ou mecanismo idempotente equivalente; não deduzir duplicidade por valor/data, pois parcelas iguais podem ser legítimas.
 
 ### Estorno
 
-- [ ] Preencher `voidedAt`, sem excluir pagamento e sem editar silenciosamente valor/data.
-- [ ] Auditoria antes/depois na mesma transação.
-- [ ] Recalcular recebido/saldo ignorando estornados.
-- [ ] Estorno repetido não cria efeitos duplicados.
-- [ ] Correção de pagamento: estornar e cadastrar novo, preservando o anterior.
+- [x] Preencher `voidedAt`, sem excluir pagamento e sem editar silenciosamente valor/data.
+- [x] Auditoria antes/depois na mesma transação.
+- [x] Recalcular recebido/saldo ignorando estornados.
+- [x] Estorno repetido não cria efeitos duplicados.
+- [x] Correção de pagamento: estornar e cadastrar novo, preservando o anterior.
 
 ## 7. Auditoria e concorrência
 
@@ -123,11 +123,11 @@ SQLite tem um escritor por vez, mas isso não torna segura uma sequência de lei
 
 ## 8. Interface e divisão de trabalho
 
-- [ ] `/billing`: lista por competência/cliente, situação, total, recebido e saldo.
-- [ ] Detalhe: itens congelados, ação de exportação conectada na Fase 4, pagamentos e histórico de eventos.
-- [ ] Diálogo de fechamento com prévia; reabertura com confirmação e motivo, se aprovado.
-- [ ] Formulário de pagamento total/parcial e ação de estorno.
-- [ ] Estados bloqueados explicam como reabrir e por que pagamentos ativos impedem a ação.
+- [x] `/billing`: lista por competência/cliente, situação, total, recebido e saldo.
+- [x] Detalhe: itens congelados, ação de exportação conectada na Fase 4, pagamentos e histórico de eventos.
+- [x] Diálogo de fechamento com prévia; reabertura com confirmação e motivo, se aprovado.
+- [x] Formulário de pagamento total/parcial e ação de estorno.
+- [x] Estados bloqueados explicam como reabrir e por que pagamentos ativos impedem a ação.
 
 Arquivos-base: `src/modules/billing/`, `src/modules/payment/`, `src/modules/audit/`, `src/app/billing/`, testes de domínio/integração/E2E. Primeiro um dono estabiliza schema e contratos financeiros. Depois dividir worktrees em fechamento/reabertura, pagamentos/estornos e interface/testes. As funções de pagamento dependem do contrato fechado de período; não implementá-las sobre suposições divergentes. Big Pickle em todos os executores.
 

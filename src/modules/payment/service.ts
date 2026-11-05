@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
-import { localDateTimeToUtc } from "@/lib/datetime";
+import { formatInstantInTimeZone, localDateTimeToUtc } from "@/lib/datetime";
 import { prisma as defaultDb } from "@/lib/db";
 import { ConflictError, NotFoundError, ValidationError } from "@/lib/errors";
 import { formatCentsAsBRL } from "@/lib/money";
@@ -66,8 +66,10 @@ export async function createPayment(
     });
     const timeZone = settings?.timezone ?? "America/Sao_Paulo";
 
-    const paidAt =
-      parsed.paidAt ?? resolvePaymentUtcInstant(parsed.paidDate!, timeZone);
+    const effectivePaidDate = parsed.paidAt
+      ? formatInstantInTimeZone(parsed.paidAt, timeZone).date
+      : parsed.paidDate!;
+    const paidAt = resolvePaymentUtcInstant(effectivePaidDate, timeZone);
 
     const period = await tx.billingPeriod.findUnique({
       where: { id: parsed.billingPeriodId },

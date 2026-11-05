@@ -280,10 +280,25 @@ function resolveAndValidateWritePayload(
       }
 
       const startInZone = formatInstantInTimeZone(input.startAt, timeZone);
-      const workDate =
-        input.workDate !== undefined && input.workDate.trim().length > 0
-          ? civilDateSchema.parse(input.workDate)
-          : startInZone.date;
+      if (input.workDate !== undefined && input.workDate.trim().length > 0) {
+        const workDateParsed = civilDateSchema.safeParse(input.workDate);
+        if (!workDateParsed.success) {
+          throw new ValidationError("Data do trabalho inválida.", {
+            workDate: workDateParsed.error.issues.map((issue) => issue.message),
+          });
+        }
+        if (workDateParsed.data !== startInZone.date) {
+          throw new ValidationError(
+            "A data civil do apontamento deve corresponder à data de início no fuso horário configurado.",
+            {
+              workDate: [
+                "A data civil deve corresponder à data de início do intervalo.",
+              ],
+            },
+          );
+        }
+      }
+      const workDate = startInZone.date;
 
       return {
         projectId: projectParsed.data,

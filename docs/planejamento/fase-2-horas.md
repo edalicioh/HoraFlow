@@ -1,6 +1,6 @@
 # Fase 2 — Gestão de horas e calendário
 
-**Estado:** autorizada em 2026-11-05 (em execução).  
+**Estado:** concluída e revisada em 2026-11-05 (aguardando aprovação do checkpoint pelo usuário).
 **Executor:** Big Pickle (`opencode/big-pickle`) / autorizado em 2026-11-05 no Antigravity: Gemini 4 Argon (Medium) (`inherit`), sequencial.  
 **Revisor padrão:** GPT-6.1 Sol (`openai/gpt-6.1-sol`) / autorizado em 2026-11-05 no Antigravity: subagente `reviewer` somente leitura (`inherit`/`pro`) antes do checkpoint.  
 **Dependência:** Fase 1 aprovada em 2026-11-05.  
@@ -42,24 +42,24 @@ As regras abaixo não foram todas explicitadas no PRD. Confirmar e registrar a p
 
 ### 4.1. Duração manual
 
-- [ ] Parser estrito de duração: horas com dois ou mais dígitos, minutos `00–59`, duração maior que zero.
-- [ ] `05:30 → 330`, `24:30 → 1470`, `100:00 → 6000`.
-- [ ] Rejeitar `00:00`, negativos, minuto `60`, string vazia, horas decimais e valores além dos limites numéricos documentados.
-- [ ] Formatar todos os totais como duração `HH:mm`, sem reduzir horas módulo 24.
-- [ ] Não converter duração manual para UTC: ela não é um instante.
+- [x] Parser estrito de duração: horas com dois ou mais dígitos, minutos `00–59`, duração maior que zero.
+- [x] `05:30 → 330`, `24:30 → 1470`, `100:00 → 6000`.
+- [x] Rejeitar `00:00`, negativos, minuto `60`, string vazia, horas decimais e valores além dos limites numéricos documentados.
+- [x] Formatar todos os totais como duração `HH:mm`, sem reduzir horas módulo 24.
+- [x] Não converter duração manual para UTC: ela não é um instante.
 
 ### 4.2. Início/término
 
-- [ ] Formulário informa data e hora de início **e data e hora de término**; permitir dias diferentes e passagem pela meia-noite.
-- [ ] Usar timezone IANA configurado para converter datas/horas locais em instantes UTC.
-- [ ] Exigir `endAt > startAt`; início igual ao término é inválido e não vira automaticamente 24h.
-- [ ] Não inferir dia seguinte silenciosamente quando término for anterior. Se houver atalho de "dia seguinte", deixá-lo explícito.
-- [ ] Não criar limite de 24h por apontamento: ele não existe no PRD.
-- [ ] Calcular minutos no servidor a partir dos instantes, não de duração enviada pelo cliente.
-- [ ] Proposta de precisão: campos em minutos e rejeição de segundos/subminutos em payload externo, sem arredondamento silencioso.
-- [ ] Validar datas impossíveis, bissextos, fim anterior e timezone inválido.
-- [ ] Definir política para horários locais inexistentes/ambíguos por mudanças de offset; preferir erro com orientação a interpretação silenciosa.
-- [ ] `workDate` é uma data civil estável: não reatribuir competência de registros quando mudar o fuso global.
+- [x] Formulário informa data e hora de início **e data e hora de término**; permitir dias diferentes e passagem pela meia-noite.
+- [x] Usar timezone IANA configurado para converter datas/horas locais em instantes UTC.
+- [x] Exigir `endAt > startAt`; início igual ao término é inválido e não vira automaticamente 24h.
+- [x] Não inferir dia seguinte silenciosamente quando término for anterior. Se houver atalho de "dia seguinte", deixá-lo explícito.
+- [x] Não criar limite de 24h por apontamento: ele não existe no PRD.
+- [x] Calcular minutos no servidor a partir dos instantes, não de duração enviada pelo cliente.
+- [x] Proposta de precisão: campos em minutos e rejeição de segundos/subminutos em payload externo, sem arredondamento silencioso.
+- [x] Validar datas impossíveis, bissextos, fim anterior e timezone inválido.
+- [x] Definir política para horários locais inexistentes/ambíguos por mudanças de offset; preferir erro com orientação a interpretação silenciosa.
+- [x] `workDate` é uma data civil estável: não reatribuir competência de registros quando mudar o fuso global.
 
 Não alterar a data de registros históricos ao formatar UTC com o timezone do navegador. Se for necessário preservar o timezone de criação, propor campo adicional e migration ao integrador antes da implementação.
 
@@ -71,14 +71,14 @@ Para dois intervalos semiabertos `[aStart, aEnd)` e `[bStart, bEnd)`, existe con
 aStart < bEnd && bStart < aEnd
 ```
 
-- [ ] Intervalos adjacentes são permitidos: 08:00–09:00 e 09:00–10:00.
-- [ ] Excluir da consulta o próprio registro durante edição e registros com `deletedAt` definido.
-- [ ] Incluir intervalos faturados ainda ativos: faturamento não libera a janela.
-- [ ] Não restringir a consulta ao mesmo `workDate`; intervalos podem atravessar dias e meses.
-- [ ] Verificação + escrita precisam de atomicidade que evite dois lançamentos concorrentes conflitantes.
-- [ ] Verificar o isolamento real do adapter SQLite escolhido e sua transação de escrita; não emitir `BEGIN IMMEDIATE` dentro de uma transação Prisma já aberta sem suporte documentado.
-- [ ] Implementar tratamento limitado de conflitos/busy e repetir **a operação inteira**, com nova validação, quando necessário.
-- [ ] Bloqueio apenas em memória/processo não é garantia suficiente para testes e processos concorrentes.
+- [x] Intervalos adjacentes são permitidos: 08:00–09:00 e 09:00–10:00.
+- [x] Excluir da consulta o próprio registro durante edição e registros com `deletedAt` definido.
+- [x] Incluir intervalos faturados ainda ativos: faturamento não libera a janela.
+- [x] Não restringir a consulta ao mesmo `workDate`; intervalos podem atravessar dias e meses.
+- [x] Verificação + escrita precisam de atomicidade que evite dois lançamentos concorrentes conflitantes.
+- [x] Verificar o isolamento real do adapter SQLite escolhido e sua transação de escrita; não emitir `BEGIN IMMEDIATE` dentro de uma transação Prisma já aberta sem suporte documentado.
+- [x] Implementar tratamento limitado de conflitos/busy e repetir **a operação inteira**, com nova validação, quando necessário.
+- [x] Bloqueio apenas em memória/processo não é garantia suficiente para testes e processos concorrentes.
 
 ## 6. Valor e tarifa
 
@@ -97,21 +97,21 @@ Validar limites antes de converter para `number`/Prisma `Int`. Não usar ponto f
 
 ### Calendário mensal
 
-- [ ] Todos os dias do mês, inclusive sem apontamentos.
-- [ ] Navegação por mês/ano, indicação de hoje e seleção de dia.
-- [ ] Total `HH:mm` por dia e mensal, dias trabalhados e destaque visual de sábados/domingos sem adicional financeiro.
-- [ ] Detalhe do dia com múltiplos lançamentos e ações de criar/editar/excluir.
-- [ ] Lista e formulário utilizáveis no mobile sem depender de hover ou célula minúscula.
+- [x] Todos os dias do mês, inclusive sem apontamentos.
+- [x] Navegação por mês/ano, indicação de hoje e seleção de dia.
+- [x] Total `HH:mm` por dia e mensal, dias trabalhados e destaque visual de sábados/domingos sem adicional financeiro.
+- [x] Detalhe do dia com múltiplos lançamentos e ações de criar/editar/excluir.
+- [x] Lista e formulário utilizáveis no mobile sem depender de hover ou célula minúscula.
 
 ### Lista e formulário
 
-- [ ] Lista com período, cliente, projeto, faturável e status; paginação ou limite explícito.
-- [ ] Seleção de cliente restringe projetos; trocar cliente limpa projeto incompatível.
-- [ ] Modalidades duração e intervalo com campos e mensagens apropriados.
-- [ ] Prévia de duração/valor é informativa; servidor recalcula ao salvar.
-- [ ] Datas passadas/futuras permitidas.
-- [ ] Exclusão lógica com confirmação, auditoria financeira e revalidação dos totais.
-- [ ] Feedback de sobreposição informa o conflito sem expor erro técnico.
+- [x] Lista com período, cliente, projeto, faturável e status; paginação ou limite explícito.
+- [x] Seleção de cliente restringe projetos; trocar cliente limpa projeto incompatível.
+- [x] Modalidades duração e intervalo com campos e mensagens apropriados.
+- [x] Prévia de duração/valor é informativa; servidor recalcula ao salvar.
+- [x] Datas passadas/futuras permitidas.
+- [x] Exclusão lógica com confirmação, auditoria financeira e revalidação dos totais.
+- [x] Feedback de sobreposição informa o conflito sem expor erro técnico.
 
 ## 8. Arquivos e divisão em worktrees
 
@@ -129,18 +129,18 @@ Primeiro estabilizar DTOs, serviços e helpers. Depois: agente A cuida do domín
 
 ## 9. Testes e aceite
 
-- [ ] 05:30 e 08:00–13:30 resultam em 330 minutos.
-- [ ] 330 minutos a 7500 centavos/h resultam em 41250 centavos.
-- [ ] 1 minuto a 30 centavos/h arredonda 0,5 centavo para 1 centavo.
-- [ ] Múltiplos lançamentos no dia somam horas e contam um dia trabalhado.
-- [ ] Não faturável soma horas e gera zero cobrança.
-- [ ] Tarifa alterada no catálogo não muda lançamentos gravados.
-- [ ] Intervalos iguais, contidos, cruzados e adjacentes; edição não conflita consigo.
-- [ ] Duas criações concorrentes sobrepostas não são ambas aceitas.
-- [ ] Virada de dia/mês/ano e fevereiro bissexto obedecem à competência aprovada.
-- [ ] Horas acima de 24 não quebram formulário, calendário ou total.
-- [ ] Registro faturado não pode ser editado/excluído por requisição direta.
-- [ ] Calendário reproduz fonte histórica se disponível; sem arquivo, distinguir demonstração sintética.
+- [x] 05:30 e 08:00–13:30 resultam em 330 minutos.
+- [x] 330 minutos a 7500 centavos/h resultam em 41250 centavos.
+- [x] 1 minuto a 30 centavos/h arredonda 0,5 centavo para 1 centavo.
+- [x] Múltiplos lançamentos no dia somam horas e contam um dia trabalhado.
+- [x] Não faturável soma horas e gera zero cobrança.
+- [x] Tarifa alterada no catálogo não muda lançamentos gravados.
+- [x] Intervalos iguais, contidos, cruzados e adjacentes; edição não conflita consigo.
+- [x] Duas criações concorrentes sobrepostas não são ambas aceitas.
+- [x] Virada de dia/mês/ano e fevereiro bissexto obedecem à competência aprovada.
+- [x] Horas acima de 24 não quebram formulário, calendário ou total.
+- [x] Registro faturado não pode ser editado/excluído por requisição direta.
+- [x] Calendário reproduz fonte histórica se disponível; sem arquivo, distinguir demonstração sintética.
 
 Executar qualidade, integração e E2E relevantes. Demonstrar criação nas duas modalidades e calendário no checkpoint; aguardar autorização para a Fase 3.
 

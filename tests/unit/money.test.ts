@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  calculateTimeEntryAmountCents,
   formatCentsAsBRL,
   formatCentsAsInput,
   MAX_CENTS,
@@ -82,4 +83,71 @@ describe("parseOptionalBRLToCents", () => {
       expect(parseOptionalBRLToCents(input)).toEqual({ valid: false });
     },
   );
+});
+
+describe("calculateTimeEntryAmountCents", () => {
+  it("calcula 330 minutos a 7500 centavos/h como 41250 centavos", () => {
+    expect(
+      calculateTimeEntryAmountCents({
+        durationMinutes: 330,
+        hourlyRateCents: 7_500,
+        billable: true,
+      }),
+    ).toBe(41_250);
+  });
+
+  it("arredonda half-up exatamente (1 minuto a 30 centavos/h = 0,5 -> 1 centavo)", () => {
+    expect(
+      calculateTimeEntryAmountCents({
+        durationMinutes: 1,
+        hourlyRateCents: 30,
+        billable: true,
+      }),
+    ).toBe(1);
+
+    // 1 minuto a 29 centavos/h = 29/60 = 0,4833... -> 0 centavos
+    expect(
+      calculateTimeEntryAmountCents({
+        durationMinutes: 1,
+        hourlyRateCents: 29,
+        billable: true,
+      }),
+    ).toBe(0);
+  });
+
+  it("retorna zero quando não faturável, preservando validação de duração e tarifa", () => {
+    expect(
+      calculateTimeEntryAmountCents({
+        durationMinutes: 330,
+        hourlyRateCents: 7_500,
+        billable: false,
+      }),
+    ).toBe(0);
+  });
+
+  it("rejeita duração não positiva, tarifa negativa ou estouro de MAX_CENTS", () => {
+    expect(() =>
+      calculateTimeEntryAmountCents({
+        durationMinutes: 0,
+        hourlyRateCents: 7_500,
+        billable: true,
+      }),
+    ).toThrow();
+
+    expect(() =>
+      calculateTimeEntryAmountCents({
+        durationMinutes: 60,
+        hourlyRateCents: -1,
+        billable: true,
+      }),
+    ).toThrow();
+
+    expect(() =>
+      calculateTimeEntryAmountCents({
+        durationMinutes: 120,
+        hourlyRateCents: MAX_CENTS,
+        billable: true,
+      }),
+    ).toThrow();
+  });
 });

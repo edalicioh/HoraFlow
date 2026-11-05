@@ -1,3 +1,5 @@
+import { ValidationError } from "@/lib/errors";
+
 export const MAX_CENTS = 2_147_483_647;
 
 const brlFormatter = new Intl.NumberFormat("pt-BR", {
@@ -79,4 +81,65 @@ export function parseOptionalBRLToCents(
   }
 
   return { valid: true, cents: parsed };
+}
+
+/**
+ * Calcula o valor financeiro de um apontamento em centavos inteiros usando
+ * arredondamento half-up exato por apontamento:
+ *   numerador = BigInt(durationMinutes) * BigInt(hourlyRateCents)
+ *   amountCents = (numerador + 30n) / 60n
+ *
+ * Apontamentos não faturáveis (`billable = false`) preservam duração e tarifa,
+ * mas gravam `amountCents = 0`.
+ */
+export function calculateTimeEntryAmountCents({
+  durationMinutes,
+  hourlyRateCents,
+  billable,
+}: {
+  durationMinutes: number;
+  hourlyRateCents: number;
+  billable: boolean;
+}): number {
+  if (!Number.isSafeInteger(durationMinutes) || durationMinutes <= 0) {
+    throw new ValidationError(
+      "A duração do apontamento deve ser um inteiro positivo em minutos.",
+      {
+        durationMinutes: ["Informe uma duração maior que zero."],
+      },
+    );
+  }
+
+  if (
+    !Number.isSafeInteger(hourlyRateCents) ||
+    hourlyRateCents < 0 ||
+    hourlyRateCents > MAX_CENTS
+  ) {
+    throw new ValidationError(
+      "A tarifa horária deve ser um inteiro não negativo em centavos.",
+      {
+        hourlyRateCents: ["Informe uma tarifa horária válida."],
+      },
+    );
+  }
+
+  if (!billable) {
+    return 0;
+  }
+
+  const numerator = BigInt(durationMinutes) * BigInt(hourlyRateCents);
+  const amountBigInt = (numerator + 30n) / 60n;
+
+  if (amountBigInt > BigInt(MAX_CENTS)) {
+    throw new ValidationError(
+      "O valor calculado para o apontamento excede o limite máximo permitido.",
+      {
+        hourlyRateCents: [
+          "Reduza a duração ou a tarifa para não exceder o limite numérico.",
+        ],
+      },
+    );
+  }
+
+  return Number(amountBigInt);
 }

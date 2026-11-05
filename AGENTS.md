@@ -12,6 +12,7 @@
 
 - Construção do aplicativo, testes e correções de implementação usam **Big Pickle**, ID `opencode/big-pickle`, como principal. Em caso de indisponibilidade/limite, o usuário autorizou em 2026-11-04 o primeiro fallback **DeepSeek V4.1 Flash Free**, ID `opencode/deepseek-v4.1-flash-free#high`.
 - Segundo fallback autorizado: **GPT-6 Luna**, ID `openai/gpt-6-luna#high`. Após deixar a escolha pendente, o usuário confirmou em 2026-11-04 “vai ser o gpt-6-luna mesmo”, autorizando este modelo em `high`. Usá-lo quando Big Pickle e DeepSeek estiverem indisponíveis; se os três falharem, parar e aguardar decisão.
+- Em 2026-11-05, para execução no ambiente **Google Antigravity** (onde os IDs de catálogo do OpenCode não estão disponíveis), o usuário autorizou explicitamente **Gemini 4 Argon (Medium)** (`inherit`) para construção sequencial e subagente dedicado `reviewer` somente leitura (`inherit`/`pro`, sem ferramentas de escrita/shell) para a revisão independente.
 - A cadeia de fallback é um protocolo de coordenação: selecionar explicitamente o modelo em cada delegação, comunicar a troca e registrar o executor no checkpoint. Não presumir failover automático da configuração.
 - O revisor padrão é **GPT-6.1 Sol**, ID `openai/gpt-6.1-sol`, pelo agente `reviewer`. Não usar Big Pickle como revisor.
 - A revisão é independente e somente leitura: analisar alterações e evidências, apontar problemas e devolver correções ao construtor principal ou fallback autorizado. O revisor não implementa correções nem aprova avanço no lugar do usuário.

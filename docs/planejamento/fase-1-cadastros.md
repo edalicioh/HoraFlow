@@ -1,10 +1,15 @@
 # Fase 1 — Clientes, projetos e tarifas
 
-**Estado:** não iniciada.  
-**Executor:** Big Pickle (`opencode/big-pickle`).  
-**Revisor padrão:** GPT-6.1 Sol (`openai/gpt-6.1-sol`), independente e somente leitura antes do checkpoint.  
-**Dependência:** Fase 0 aprovada.  
+**Estado:** autorizada em 2026-11-05 (em execução).  
+**Executor:** Big Pickle (`opencode/big-pickle`) / autorizado em 2026-11-05 no Antigravity: Gemini 4 Argon (Medium) (`inherit`), sequencial.  
+**Revisor padrão:** GPT-6.1 Sol (`openai/gpt-6.1-sol`) / autorizado em 2026-11-05 no Antigravity: subagente `reviewer` somente leitura (`inherit`/`pro`) antes do checkpoint.  
+**Dependência:** Fase 0 aprovada em 2026-11-05.  
 **Próxima fase:** [Fase 2 — Horas](fase-2-horas.md).
+
+### Decisões de domínio confirmadas em 2026-11-05
+
+- **Inativação de cliente/projeto:** desativar cliente ou projeto impede novos lançamentos e preserva o histórico; cliente inativo torna seus projetos inelegíveis para novos apontamentos sem alterar silenciosamente o campo `active` individual de cada projeto.
+- **Imutabilidade de vínculo com histórico:** proibido alterar o `clientId` de um projeto que já possua apontamentos (inclusive excluídos logicamente) ou itens de fechamento.
 
 ## 1. Objetivo
 

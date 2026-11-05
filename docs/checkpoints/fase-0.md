@@ -1,13 +1,13 @@
 # Checkpoint — Fase 0 (fundação)
 
-- **Estado:** REVISÃO TÉCNICA CONCLUÍDA — aguardando aprovação do usuário
+- **Estado:** APROVADA PELO USUÁRIO
 - **Data da execução:** 2026-11-04
 - **Construtor original:** Big Pickle (`opencode/big-pickle`), implementação inicial
 - **Retomada corretiva:** GPT-6 Luna (`openai/gpt-6-luna#high`), construtor sequencial único, explicitamente autorizado pelo usuário em 2026-11-04 após indisponibilidade por cota de Big Pickle e DeepSeek
 - **Revisão independente:** GPT-6.1 Sol (`openai/gpt-6.1-sol`, agente `reviewer`), concluída em `f45906d`; apresentação do checkpoint liberada tecnicamente com ressalvas não bloqueantes
 - **Segunda revisão independente:** em `633c38b`, segurança e rollback confirmados; Fase 0 permaneceu bloqueada pelo achado médio de paridade dotenv e apontou refinamento de porta configurada
-- **Aprovação do usuário:** pendente
-- **Fase seguinte:** não iniciada
+- **Aprovação do usuário:** Aprovada explicitamente em 2026-11-05; Fase 1 autorizada
+- **Fase seguinte:** Fase 1 autorizada em 2026-11-05
 
 Este documento registra a entrega técnica da Fase 0. Ele não substitui a
 revisão independente nem a aprovação explícita do usuário.

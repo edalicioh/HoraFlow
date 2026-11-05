@@ -14,6 +14,7 @@ import {
   BRL_EXCEL_NUM_FMT,
   exportReportToXlsx,
 } from "@/modules/reporting/exporters/xlsx";
+import { parseReportFilter } from "@/modules/reporting/schema";
 import type { ReportDataset } from "@/modules/reporting/types";
 
 function makeSampleDataset(
@@ -121,6 +122,14 @@ function makeSampleDataset(
 }
 
 describe("Exportadores de relatórios (CSV, XLSX e PDF)", () => {
+  describe("Filtro de relatório (parseReportFilter)", () => {
+    it("rejeita mês de competência informado isoladamente sem o ano", () => {
+      expect(() =>
+        parseReportFilter({ reportType: "hours-by-period", month: 10 }),
+      ).toThrow("Informe o ano ao filtrar por mês de competência.");
+    });
+  });
+
   describe("CSV Exporter e neutralização de fórmula", () => {
     it("neutraliza fórmulas iniciadas por =, +, -, @, tabulação ou precedidas por espaços", () => {
       expect(neutralizeFormulaInjection("=1+1")).toBe("'=1+1");

@@ -175,6 +175,15 @@ export function parseReportFilter(
     });
   }
 
+  if (monthParsed.data !== null && yearParsed.data === null) {
+    throw new ValidationError(
+      "Informe o ano ao filtrar por mês de competência.",
+      {
+        year: ["Informe o ano ao filtrar por mês de competência."],
+      },
+    );
+  }
+
   const billableRaw = (raw.billable ?? "ALL").trim().toUpperCase();
   const billable: ReportFilterState["billable"] =
     billableRaw === "BILLABLE" || billableRaw === "TRUE"

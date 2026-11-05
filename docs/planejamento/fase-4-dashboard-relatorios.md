@@ -1,6 +1,6 @@
 # Fase 4 — Dashboard e relatórios
 
-**Estado:** autorizada em 2026-11-05 (em execução).
+**Estado:** implementada e verificada em 2026-11-05 (aguardando aprovação do checkpoint `docs/checkpoints/fase-4.md`).
 **Executor:** Big Pickle (`opencode/big-pickle`) / autorizado em 2026-11-05 no Antigravity: Gemini 4 Argon (Medium) (`inherit`), sequencial.
 **Revisor padrão:** GPT-6.1 Sol (`openai/gpt-6.1-sol`) / autorizado em 2026-11-05 no Antigravity: subagente `reviewer` somente leitura (`inherit`/`pro`) antes do checkpoint.
 **Dependência:** Fase 3 aprovada em 2026-11-05.
@@ -17,15 +17,15 @@ Entregar visão mensal confiável e relatórios que consultem os mesmos dados e 
 
 ## 2. Dashboard mensal
 
-- [ ] Seletor de competência com navegação entre meses e anos.
-- [ ] Horas trabalhadas: todos os apontamentos ativos do mês, inclusive não faturáveis.
-- [ ] Dias trabalhados: quantidade de `workDate` distintos com apontamentos ativos.
-- [ ] Horas faturáveis: soma apenas dos apontamentos faturáveis ativos.
-- [ ] Valor acumulado: soma dos `amountCents` dos faturáveis na competência, sem arredondar novamente o total.
-- [ ] Valor recebido e pendente com semântica de competência claramente indicada.
-- [ ] Distribuição de horas por cliente/projeto, com tabela acessível além de eventual gráfico.
-- [ ] Estados vazio, carregando, erro e valores zero corretos.
-- [ ] Revalidação após alterações de horas, fechamento, reabertura, pagamento e estorno.
+- [x] Seletor de competência com navegação entre meses e anos.
+- [x] Horas trabalhadas: todos os apontamentos ativos do mês, inclusive não faturáveis.
+- [x] Dias trabalhados: quantidade de `workDate` distintos com apontamentos ativos.
+- [x] Horas faturáveis: soma apenas dos apontamentos faturáveis ativos.
+- [x] Valor acumulado: soma dos `amountCents` dos faturáveis na competência, sem arredondar novamente o total.
+- [x] Valor recebido e pendente com semântica de competência claramente indicada.
+- [x] Distribuição de horas por cliente/projeto, com tabela acessível além de eventual gráfico.
+- [x] Estados vazio, carregando, erro e valores zero corretos.
+- [x] Revalidação após alterações de horas, fechamento, reabertura, pagamento e estorno.
 
 ### 2.1. Semântica financeira a confirmar
 
@@ -59,34 +59,34 @@ Demonstrativos de fechamento leem os snapshots da versão correspondente, não r
 
 ### CSV
 
-- [ ] UTF-8 com BOM e separador `;`, adequado ao Excel pt-BR.
-- [ ] Escape correto de aspas, delimitadores e quebras de linha.
-- [ ] Cabeçalhos legíveis, datas explícitas e duração em `HH:mm` sem virar horário do dia.
-- [ ] Neutralizar injeção de fórmulas em campos textuais não confiáveis, inclusive valores iniciados por `=`, `+`, `-`, `@` ou caracteres de controle pertinentes.
+- [x] UTF-8 com BOM e separador `;`, adequado ao Excel pt-BR.
+- [x] Escape correto de aspas, delimitadores e quebras de linha.
+- [x] Cabeçalhos legíveis, datas explícitas e duração em `HH:mm` sem virar horário do dia.
+- [x] Neutralizar injeção de fórmulas em campos textuais não confiáveis, inclusive valores iniciados por `=`, `+`, `-`, `@` ou caracteres de controle pertinentes.
 
 ### XLSX — ExcelJS
 
-- [ ] Cabeçalho, filtros e linha de totais coerentes com a tela.
-- [ ] Dinheiro exportado como número com formato monetário, sem fórmulas vindas do usuário.
-- [ ] Durações acima de 24h exibidas como texto `HH:mm` ou número de dias com formato `[h]:mm`; testar round-trip.
-- [ ] Datas civis exportadas sem deslocamento de fuso inadvertido.
-- [ ] Campos textuais como strings, nunca como fórmulas/hyperlinks arbitrários.
+- [x] Cabeçalho, filtros e linha de totais coerentes com a tela.
+- [x] Dinheiro exportado como número com formato monetário, sem fórmulas vindas do usuário.
+- [x] Durações acima de 24h exibidas como texto `HH:mm` ou número de dias com formato `[h]:mm`; testar round-trip.
+- [x] Datas civis exportadas sem deslocamento de fuso inadvertido.
+- [x] Campos textuais como strings, nunca como fórmulas/hyperlinks arbitrários.
 
 ### PDF — `@react-pdf/renderer`
 
-- [ ] Cabeçalho com período/filtros, totais e data de geração no fuso configurado.
-- [ ] Tabelas com quebra de página, cabeçalho repetível e número de página.
-- [ ] Acentos pt-BR e fontes locais/embutidas, sem download obrigatório em runtime.
-- [ ] Testar nomes e descrições longas, páginas múltiplas e linhas sem dados.
-- [ ] Gerar no servidor Node, não depender de runtime Edge incompatível.
+- [x] Cabeçalho com período/filtros, totais e data de geração no fuso configurado.
+- [x] Tabelas com quebra de página, cabeçalho repetível e número de página.
+- [x] Acentos pt-BR e fontes locais/embutidas, sem download obrigatório em runtime.
+- [x] Testar nomes e descrições longas, páginas múltiplas e linhas sem dados.
+- [x] Gerar no servidor Node, não depender de runtime Edge incompatível.
 
 ### Rotas e limites
 
-- [ ] Route Handlers validam filtros e formato; não aceitam caminhos de arquivo enviados pelo cliente.
-- [ ] Downloads com `Content-Type` e `Content-Disposition` corretos e nome de arquivo sanitizado.
-- [ ] Definir limites de linhas e tratamento de relatórios grandes antes de carregar tudo em memória; não truncar silenciosamente.
-- [ ] Erros não expõem SQL, caminhos locais ou stack traces.
-- [ ] Não gravar relatórios com dados pessoais em `public/`.
+- [x] Route Handlers validam filtros e formato; não aceitam caminhos de arquivo enviados pelo cliente.
+- [x] Downloads com `Content-Type` e `Content-Disposition` corretos e nome de arquivo sanitizado.
+- [x] Definir limites de linhas e tratamento de relatórios grandes antes de carregar tudo em memória; não truncar silenciosamente.
+- [x] Erros não expõem SQL, caminhos locais ou stack traces.
+- [x] Não gravar relatórios com dados pessoais em `public/`.
 
 ## 6. Fronteiras e paralelismo
 
@@ -104,16 +104,16 @@ Primeiro estabilizar DTOs de relatório, filtros e semântica dos cards. Depois 
 
 ## 7. Testes obrigatórios
 
-- [ ] Mesmo filtro produz exatamente os mesmos IDs, minutos e centavos na consulta e nos três formatos.
-- [ ] Dois lançamentos no mesmo dia contam um dia trabalhado; não faturável soma horas sem cobrança.
-- [ ] Estorno deixa de somar ao recebido; fechamento parcial mantém saldo correto.
-- [ ] Pagamento em outro mês obedece à semântica de competência versus fluxo.
-- [ ] Sem dupla contagem de horas/valores após fechar e reabrir.
-- [ ] Snapshot financeiro não muda quando tarifa atual é alterada.
-- [ ] CSV com aspas, acentos, newline, `;` e tentativa de fórmula.
-- [ ] XLSX reaberto por ExcelJS com valores/durações válidos; fórmula do usuário não executável.
-- [ ] PDF gerado e verificado em quantidade de páginas, texto/valores e inspeção visual de tabela longa.
-- [ ] E2E com filtros, download e dashboard atualizado após mutação.
+- [x] Mesmo filtro produz exatamente os mesmos IDs, minutos e centavos na consulta e nos três formatos.
+- [x] Dois lançamentos no mesmo dia contam um dia trabalhado; não faturável soma horas sem cobrança.
+- [x] Estorno deixa de somar ao recebido; fechamento parcial mantém saldo correto.
+- [x] Pagamento em outro mês obedece à semântica de competência versus fluxo.
+- [x] Sem dupla contagem de horas/valores após fechar e reabrir.
+- [x] Snapshot financeiro não muda quando tarifa atual é alterada.
+- [x] CSV com aspas, acentos, newline, `;` e tentativa de fórmula.
+- [x] XLSX reaberto por ExcelJS com valores/durações válidos; fórmula do usuário não executável.
+- [x] PDF gerado e verificado em quantidade de páginas, texto/valores e inspeção visual de tabela longa.
+- [x] E2E com filtros, download e dashboard atualizado após mutação.
 
 ## 8. Critérios de aceite e checkpoint
 

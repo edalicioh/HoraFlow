@@ -1,11 +1,11 @@
 # Checkpoint — Fase 1 (clientes, projetos e tarifas)
 
-- **Estado:** REVISÃO TÉCNICA CONCLUÍDA — aguardando aprovação do usuário
+- **Estado:** APROVADA PELO USUÁRIO
 - **Data da execução:** 2026-11-05
 - **Modelo executor e agentes:** Gemini 4 Argon (Medium) (`inherit`), construtor sequencial único autorizado explicitamente pelo usuário em 2026-11-05 para o ambiente Google Antigravity
 - **Revisor:** Subagente independente `reviewer` (`inherit` / Gemini 4 Argon (Medium), somente leitura, sem ferramentas de escrita, shell ou delegação), autorizado pelo usuário em 2026-11-05
-- **Aprovação do usuário:** pendente
-- **Fase seguinte:** Fase 2 (Horas) — não iniciada
+- **Aprovação do usuário:** Aprovada explicitamente em 2026-11-05; Fase 2 autorizada
+- **Fase seguinte:** Fase 2 (Horas) — autorizada em 2026-11-05
 
 Este documento registra a entrega técnica da Fase 1 conforme o protocolo de [`docs/planejamento/README.md`](../planejamento/README.md). Ele não substitui a aprovação explícita do usuário para avançar à Fase 2.
 

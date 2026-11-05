@@ -82,6 +82,16 @@ Confirmadas explicitamente antes do início da Fase 1:
 - **Cliente/projeto inativo:** desativar cliente ou projeto bloqueia novos lançamentos e preserva integralmente o histórico; desativar um cliente torna seus projetos inelegíveis para novos apontamentos sem alterar silenciosamente o campo `active` individual de cada projeto.
 - **Mudança de cliente em projeto com histórico:** proibido alterar o `clientId` de um projeto que já possua apontamentos (inclusive excluídos logicamente) ou itens de fechamento, evitando transferir histórico ou faturamento entre clientes.
 
+### 4.3. Decisões aprovadas pelo usuário em 2026-11-05 (Fase 2)
+
+Confirmadas explicitamente antes do início da Fase 2:
+
+- **Aprovação da Fase 1 e autorização da Fase 2:** o checkpoint `docs/checkpoints/fase-1.md` foi aprovado e a construção da Fase 2 (`docs/planejamento/fase-2-horas.md`) foi autorizada.
+- **Intervalo cruzando competência:** atribuir toda a duração do apontamento `INTERVAL` ao `workDate` da data civil de início (no fuso configurado), sem fracionar automaticamente o registro.
+- **Sobreposição de intervalos:** bloqueio global entre todos os clientes e projetos para registros `INTERVAL` ativos (`deletedAt IS NULL`), usando comparação semiaberta (`aStart < bEnd && bStart < aEnd`) que permite intervalos adjacentes (`08:00–09:00` e `09:00–10:00`) e exclui lançamentos `DURATION` (sem janela temporal).
+- **Novos lançamentos e edições em competência fechada ou faturada:** bloquear criação, edição e exclusão de apontamentos quando a competência correspondente (`cliente + ano/mês` de `workDate`) estiver com `BillingPeriod.status = CLOSED`, ou quando o próprio apontamento estiver faturado (`status !== DRAFT` ou com `BillingItem` ativo `releasedAt IS NULL`).
+- **Tarifa e vínculo ao editar apontamento:** na edição de apontamentos `DRAFT`, preservar por padrão o snapshot `hourlyRateCents` já gravado salvo alteração explícita pelo usuário, e permitir manter o `projectId` original mesmo que o cliente ou projeto tenha sido inativado posteriormente (bloqueando apenas novos apontamentos ou a troca para outro projeto/cliente inativo).
+
 As demais linhas desta seção continuam pendentes e devem ser confirmadas no momento indicado. Uma pendência não relacionada não impede trabalho independente; não criar migrations ou contratos irreversíveis que dependam de resposta ainda não obtida.
 
 ## 5. Construtor, revisor e coordenador

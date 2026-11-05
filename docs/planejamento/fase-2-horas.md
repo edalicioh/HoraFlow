@@ -1,10 +1,18 @@
 # Fase 2 — Gestão de horas e calendário
 
-**Estado:** não iniciada.  
-**Executor:** Big Pickle (`opencode/big-pickle`).  
-**Revisor padrão:** GPT-6.1 Sol (`openai/gpt-6.1-sol`), independente e somente leitura antes do checkpoint.  
-**Dependência:** Fase 1 aprovada.  
+**Estado:** autorizada em 2026-11-05 (em execução).  
+**Executor:** Big Pickle (`opencode/big-pickle`) / autorizado em 2026-11-05 no Antigravity: Gemini 4 Argon (Medium) (`inherit`), sequencial.  
+**Revisor padrão:** GPT-6.1 Sol (`openai/gpt-6.1-sol`) / autorizado em 2026-11-05 no Antigravity: subagente `reviewer` somente leitura (`inherit`/`pro`) antes do checkpoint.  
+**Dependência:** Fase 1 aprovada em 2026-11-05.  
 **Próxima fase:** [Fase 3 — Financeiro](fase-3-financeiro.md).
+
+### Decisões de domínio confirmadas em 2026-11-05
+
+- **Competência de intervalo cruzando dia/mês:** atribuir toda a duração ao `workDate` da data civil de início (no fuso configurado), sem dividir automaticamente.
+- **Sobreposição:** bloqueio global entre todos os clientes/projetos apenas para apontamentos `INTERVAL` ativos (`deletedAt IS NULL`), permitindo intervalos adjacentes (`aStart < bEnd && bStart < aEnd`); lançamentos `DURATION` não possuem janela temporal e não participam da comparação.
+- **Competência fechada e registro faturado:** bloquear criação, edição e exclusão quando o `BillingPeriod` daquele cliente/competência (`workDate`) estiver `CLOSED`, bem como bloquear edição/exclusão de registros `TimeEntry` faturados (`status !== DRAFT` ou com `BillingItem` ativo `releasedAt IS NULL`).
+- **Cadastro inativo em edições históricas:** bloquear novos lançamentos em clientes/projetos inativos, mas permitir editar um apontamento `DRAFT` existente mantendo seu projeto original caso o projeto/cliente tenha sido desativado depois (sem exigir troca automática para cadastro ativo).
+- **Edição de tarifa histórica:** preservar o snapshot `hourlyRateCents` gravado por padrão ao editar apontamentos, permitindo alteração explícita antes do faturamento e jamais recalculando apontamentos quando o catálogo muda.
 
 ## 1. Objetivo
 

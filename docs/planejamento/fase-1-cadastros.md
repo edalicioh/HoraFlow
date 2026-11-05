@@ -1,6 +1,6 @@
 # Fase 1 — Clientes, projetos e tarifas
 
-**Estado:** autorizada em 2026-11-05 (em execução).  
+**Estado:** revisão técnica concluída — aguardando aprovação do usuário (2026-11-05).  
 **Executor:** Big Pickle (`opencode/big-pickle`) / autorizado em 2026-11-05 no Antigravity: Gemini 4 Argon (Medium) (`inherit`), sequencial.  
 **Revisor padrão:** GPT-6.1 Sol (`openai/gpt-6.1-sol`) / autorizado em 2026-11-05 no Antigravity: subagente `reviewer` somente leitura (`inherit`/`pro`) antes do checkpoint.  
 **Dependência:** Fase 0 aprovada em 2026-11-05.  
@@ -32,39 +32,39 @@ Contratos mínimos, adaptáveis ao padrão estabelecido na Fase 0:
 
 ### 3.1. Validação e domínio
 
-- [ ] Validar payloads com Zod no servidor e não confiar em IDs, tarifas ou status enviados pela interface.
-- [ ] Nome obrigatório após trim; definir limites documentados para nome/descrição e testar os limites.
-- [ ] Tarifa opcional, inteira e não negativa em centavos; validar limites compatíveis com Prisma `Int` e cálculos futuros.
-- [ ] Converter entrada monetária pt-BR para centavos sem multiplicar `float` de forma imprecisa.
-- [ ] Validar existência e elegibilidade do cliente ao criar projeto.
-- [ ] Não adicionar unicidade de nomes sem necessidade aprovada; se houver alerta de nomes parecidos, não tratá-lo como restrição silenciosa.
-- [ ] Proibir a mudança de cliente de um projeto com histórico, salvo política expressamente aprovada; isso evita transferir horas e fechamentos históricos para outro cliente.
+- [x] Validar payloads com Zod no servidor e não confiar em IDs, tarifas ou status enviados pela interface.
+- [x] Nome obrigatório após trim; definir limites documentados para nome/descrição e testar os limites.
+- [x] Tarifa opcional, inteira e não negativa em centavos; validar limites compatíveis com Prisma `Int` e cálculos futuros.
+- [x] Converter entrada monetária pt-BR para centavos sem multiplicar `float` de forma imprecisa.
+- [x] Validar existência e elegibilidade do cliente ao criar projeto.
+- [x] Não adicionar unicidade de nomes sem necessidade aprovada; se houver alerta de nomes parecidos, não tratá-lo como restrição silenciosa.
+- [x] Proibir a mudança de cliente de um projeto com histórico, salvo política expressamente aprovada; isso evita transferir horas e fechamentos históricos para outro cliente.
 
 ### 3.2. Clientes
 
-- [ ] Tela de listagem com busca, filtro ativos/inativos e estado vazio.
-- [ ] Formulário de criação/edição com descrição e tarifa opcional.
-- [ ] Detalhe com projetos associados e área de histórico preparada, sem fabricar horas ou valores.
-- [ ] Ação de ativar/desativar com feedback imediato.
-- [ ] Exclusão física apenas quando não existe histórico nem dependência que a impeça; validar no servidor e manter FK restritiva.
-- [ ] Não remover projetos em cascata. Quando houver projetos vinculados, bloquear a exclusão e orientar desativação.
+- [x] Tela de listagem com busca, filtro ativos/inativos e estado vazio.
+- [x] Formulário de criação/edição com descrição e tarifa opcional.
+- [x] Detalhe com projetos associados e área de histórico preparada, sem fabricar horas ou valores.
+- [x] Ação de ativar/desativar com feedback imediato.
+- [x] Exclusão física apenas quando não existe histórico nem dependência que a impeça; validar no servidor e manter FK restritiva.
+- [x] Não remover projetos em cascata. Quando houver projetos vinculados, bloquear a exclusão e orientar desativação.
 
 ### 3.3. Projetos
 
-- [ ] Listagem filtrável por cliente e status.
-- [ ] Formulários com cliente obrigatório e tarifa própria opcional.
-- [ ] Exibir de onde vem a tarifa efetiva: projeto, cliente ou global.
-- [ ] Ativar/desativar preservando vínculos e histórico.
-- [ ] Exclusão física bloqueada com apontamentos, inclusive excluídos logicamente.
-- [ ] Cliente inativo torna seus projetos inelegíveis para novos apontamentos, sem alterar silenciosamente o campo `active` de cada projeto; confirmar essa proposta no checkpoint.
+- [x] Listagem filtrável por cliente e status.
+- [x] Formulários com cliente obrigatório e tarifa própria opcional.
+- [x] Exibir de onde vem a tarifa efetiva: projeto, cliente ou global.
+- [x] Ativar/desativar preservando vínculos e histórico.
+- [x] Exclusão física bloqueada com apontamentos, inclusive excluídos logicamente.
+- [x] Cliente inativo torna seus projetos inelegíveis para novos apontamentos, sem alterar silenciosamente o campo `active` de cada projeto; confirmar essa proposta no checkpoint.
 
 ### 3.4. Tarifas
 
-- [ ] Resolver com prioridade `projectRateCents ?? clientRateCents ?? defaultRateCents`.
-- [ ] Deixar explícito que o resolvedor fornece a tarifa para um novo lançamento, não recalcula históricos.
-- [ ] Alterações em cadastros não atualizam `TimeEntry.hourlyRateCents` nem `amountCents` já gravados.
-- [ ] Registrar alterações financeiras de tarifas em `AuditLog`, com antes/depois na mesma transação.
-- [ ] Apresentar valores em BRL e manter centavos no domínio e na persistência.
+- [x] Resolver com prioridade `projectRateCents ?? clientRateCents ?? defaultRateCents`.
+- [x] Deixar explícito que o resolvedor fornece a tarifa para um novo lançamento, não recalcula históricos.
+- [x] Alterações em cadastros não atualizam `TimeEntry.hourlyRateCents` nem `amountCents` já gravados.
+- [x] Registrar alterações financeiras de tarifas em `AuditLog`, com antes/depois na mesma transação.
+- [x] Apresentar valores em BRL e manter centavos no domínio e na persistência.
 
 ## 4. Arquivos e fronteiras
 
@@ -105,11 +105,11 @@ Integração deve usar SQLite real temporário. E2E: criar cliente, criar projet
 
 ## 7. Critérios de aceite
 
-- [ ] CRUD e ativação/desativação funcionam com validação no servidor.
-- [ ] Integridade impede exclusões destrutivas e reassociação histórica indevida.
-- [ ] Fallback de tarifas e zero cobertos por testes.
-- [ ] Lint, tipos, unitários, integração, E2E relevante e build passam.
-- [ ] Nenhum fluxo financeiro ou de horas antecipado sem autorização.
+- [x] CRUD e ativação/desativação funcionam com validação no servidor.
+- [x] Integridade impede exclusões destrutivas e reassociação histórica indevida.
+- [x] Fallback de tarifas e zero cobertos por testes.
+- [x] Lint, tipos, unitários, integração, E2E relevante e build passam.
+- [x] Nenhum fluxo financeiro ou de horas antecipado sem autorização.
 
 Entregar resumo e evidências; solicitar aprovação para iniciar a Fase 2.
 

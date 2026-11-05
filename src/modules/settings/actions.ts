@@ -51,6 +51,9 @@ export async function updateSettingsAction(
       defaultHourlyRateCents: parsed.data.defaultHourlyRate,
     });
     revalidatePath("/settings");
+    revalidatePath("/clients");
+    revalidatePath("/clients/[id]", "page");
+    revalidatePath("/projects");
     return {
       status: "success",
       message: "Configurações salvas. A moeda permanece BRL no MVP.",

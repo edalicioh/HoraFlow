@@ -38,6 +38,7 @@ async function assertAuthorizedAction(): Promise<ProjectActionState | null> {
 function revalidateCatalogPaths(clientId?: string) {
   revalidatePath("/projects");
   revalidatePath("/clients");
+  revalidatePath("/clients/[id]", "page");
   if (clientId) {
     revalidatePath(`/clients/${clientId}`);
   }

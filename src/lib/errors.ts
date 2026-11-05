@@ -18,3 +18,17 @@ export class ValidationError extends DomainError {
     this.name = "ValidationError";
   }
 }
+
+export class NotFoundError extends DomainError {
+  constructor(message: string, fieldErrors?: FieldErrors) {
+    super("NOT_FOUND", message, fieldErrors);
+    this.name = "NotFoundError";
+  }
+}
+
+export class ConflictError extends DomainError {
+  constructor(message: string, fieldErrors?: FieldErrors) {
+    super("CONFLICT", message, fieldErrors);
+    this.name = "ConflictError";
+  }
+}

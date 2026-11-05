@@ -51,3 +51,32 @@ export function parseBRLToCents(input: string): number | null {
 
   return cents;
 }
+
+export type OptionalCentsParseResult =
+  | { valid: true; cents: number | null }
+  | { valid: false };
+
+/**
+ * Converte um valor monetário opcional digitado em pt-BR para centavos inteiros.
+ * String vazia (ou apenas espaços) resulta em `{ valid: true, cents: null }`.
+ * Zero explícito ("0", "0,00", "R$ 0,00") resulta em `{ valid: true, cents: 0 }`.
+ */
+export function parseOptionalBRLToCents(
+  input: string | null | undefined,
+): OptionalCentsParseResult {
+  if (input === null || input === undefined) {
+    return { valid: true, cents: null };
+  }
+
+  const trimmed = input.replace(/\u00a0/g, " ").trim();
+  if (trimmed.length === 0) {
+    return { valid: true, cents: null };
+  }
+
+  const parsed = parseBRLToCents(trimmed);
+  if (parsed === null) {
+    return { valid: false };
+  }
+
+  return { valid: true, cents: parsed };
+}

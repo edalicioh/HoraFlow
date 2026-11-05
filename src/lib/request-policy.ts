@@ -228,11 +228,11 @@ function validateOrigin(
     return { allowed: false, reason: "invalid_origin" };
   }
 
-  const originPort =
-    parsedOrigin.port || (parsedOrigin.protocol === "https:" ? "443" : "80");
+  const defaultPort = parsedOrigin.protocol === "https:" ? "443" : "80";
+  const originPort = parsedOrigin.port || defaultPort;
   const requestPort = requestHost.portExplicit
     ? requestHost.explicitPort
-    : originPort;
+    : defaultPort;
 
   if (
     parsedOrigin.hostname.toLowerCase().replace(/^\[|\]$/g, "") !==

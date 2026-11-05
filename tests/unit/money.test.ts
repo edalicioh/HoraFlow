@@ -4,6 +4,7 @@ import {
   formatCentsAsInput,
   MAX_CENTS,
   parseBRLToCents,
+  parseOptionalBRLToCents,
 } from "@/lib/money";
 
 describe("parseBRLToCents", () => {
@@ -49,4 +50,36 @@ describe("formatação monetária", () => {
   it("formata centavos para o campo de edição", () => {
     expect(formatCentsAsInput(123_456)).toBe("1.234,56");
   });
+});
+
+describe("parseOptionalBRLToCents", () => {
+  it.each([null, undefined, "", "   ", "\u00a0"])(
+    "retorna cents=null para entrada vazia (%s)",
+    (input) => {
+      expect(parseOptionalBRLToCents(input)).toEqual({
+        valid: true,
+        cents: null,
+      });
+    },
+  );
+
+  it.each([
+    ["0", 0],
+    ["0,00", 0],
+    ["R$ 0,00", 0],
+    ["120,00", 12_000],
+    ["1.500,50", 150_050],
+  ])("preserva valor válido opcional %s -> %i centavos", (input, cents) => {
+    expect(parseOptionalBRLToCents(input)).toEqual({
+      valid: true,
+      cents,
+    });
+  });
+
+  it.each(["-10,00", "12.34", "abc", "10,999", "999999999999,99"])(
+    "sinaliza invalidade para %s",
+    (input) => {
+      expect(parseOptionalBRLToCents(input)).toEqual({ valid: false });
+    },
+  );
 });

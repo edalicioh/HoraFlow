@@ -46,7 +46,23 @@ describe("portas de hosts confiáveis", () => {
     ["horaflow.lan:443", "https://horaflow.lan:443"],
     ["horaflow.lan:443", "https://horaflow.lan"],
     ["[2001:db8::10]:443", "https://[2001:db8::10]:443"],
+    ["localhost", "http://localhost"],
+    ["localhost", "https://localhost"],
   ])("permite origem HTTP(S) coerente para %s", (host, origin) => {
     expect(decide({ host, origin, trustedHosts: host })).toEqual({ allowed: true });
   });
+
+  it.each([
+    ["localhost", "http://localhost:9999"],
+    ["localhost", "https://localhost:8443"],
+    ["horaflow.lan", "http://horaflow.lan:3000"],
+  ])(
+    "rejeita origem com porta não padrão quando Host %s omite porta (%s)",
+    (host, origin) => {
+      expect(decide({ host, origin, trustedHosts: host })).toEqual({
+        allowed: false,
+        reason: "untrusted_origin",
+      });
+    },
+  );
 });

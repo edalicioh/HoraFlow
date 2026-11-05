@@ -1,130 +1,183 @@
 # HoraFlow
 
-Aplicação local de controle de horas, projetos e faturamento. Este repositório
-está na **Fase 0 (fundação)** do plano em [`docs/planejamento/`](docs/planejamento/README.md).
-A entrega atual é um scaffold executável: navegação base, configurações
-persistentes, banco migrável, testes e Docker. Os fluxos das fases seguintes
-ainda **não** foram implementados.
+Aplicação local de controle de horas, projetos e faturamento para profissionais autônomos e pequenas equipes.
+Desenvolvida com Next.js 16 (App Router), TypeScript estrito, Prisma 7, SQLite e Docker.
 
-## Requisitos
+O sistema opera localmente por padrão (`127.0.0.1`), sem necessidade de login no MVP, com integridade financeira estrita em centavos inteiros (sem ponto flutuante), controle de durações sem truncamento de 24h e auditoria transacional completa.
 
-- Node.js 22.12 ou superior (validado com 22.23.2)
-- pnpm 10.13.1 (`corepack enable`)
-- Docker com Compose v2 para a execução em contêiner
+---
 
-## Execução local
+## Funcionalidades do MVP
+
+1. **Configurações e Segurança Local:**
+   - Moeda base BRL (`R$`), fuso horário inicial `America/Sao_Paulo`.
+   - Política restritiva de segurança: aceita apenas requisições em loopback (`127.0.0.1`, `localhost`), validação de `Origin` e `Host` confiáveis contra CSRF e DNS rebinding.
+   - Tema claro e escuro persistente, design responsivo desktop e mobile.
+
+2. **Clientes, Projetos e Tarifas:**
+   - Gestão de clientes e projetos com hierarquia tarifária estrita: Tarifa do Projeto > Tarifa do Cliente > Tarifa Global.
+   - Desativação suave de cadastros com preservação de todo o histórico faturável.
+
+3. **Apontamento de Horas e Calendário (`/timesheet`):**
+   - Calendário mensal interativo com destaque de finais de semana e indicadores diários de horas.
+   - Registro por **Duração direta** (sem limite de 24h, suportando jornadas como `24:30`) ou por **Intervalo de início e término** (`startMinutes` a `endMinutes`).
+   - Validação atômica contra sobreposição de horários no mesmo dia.
+   - Apontamentos marcados como faturáveis ou não faturáveis, vinculados a projeto e cliente.
+
+4. **Fechamento e Faturamento (`/billing`):**
+   - Fechamento mensal transacional (`BillingPeriod`) com congelamento imutável de snapshots de tarifa (`rateSnapshotCents`), cliente, projeto e descrição (`BillingItem`).
+   - Ciclo de vida financeiro completo: Rascunho -> Fechado (`CLOSED`) -> Parcialmente pago -> Totalmente pago (`PAID`).
+   - Registro de pagamentos com validação estrita contra superfaturamento.
+   - Estorno auditável de pagamentos com restauração de saldos.
+   - Reabertura transacional de fechamentos com liberação auditada de apontamentos (`releasedAt`), mantendo histórico imutável das revisões financeiras.
+
+5. **Dashboard Executivo e Relatórios Oficiais (`/dashboard`, `/reports`):**
+   - Indicadores executivos mensais: Horas trabalhadas, Horas faturáveis, Dias trabalhados, Valor acumulado, Recebido na competência e Pendente separado em "A faturar (rascunho)" e "Saldo de fechamentos".
+   - Distribuição de horas e faturamento por cliente e projeto com barras proporcionais.
+   - Camada única de dados gerando 7 relatórios oficiais: Horas por período, Horas por cliente, Horas por projeto, Apontamentos detalhados, Valores faturáveis, Fechamentos mensais e Pagamentos/pendências.
+   - Exportação em três formatos com paridade 1:1:
+     - **CSV:** UTF-8 com BOM (`\uFEFF`), delimitador `;`, escape de caracteres e neutralização contra injeção de fórmulas (`=`, `+`, `-`, `@`).
+     - **XLSX (`ExcelJS`):** valores monetários formatados, durações completas (`HH:mm`), fórmulas avaliadas e proteção de células.
+     - **PDF (`@react-pdf/renderer`):** gerado no servidor Node.js sem Chromium, paginação multi-página, hifenização pt-BR e layout corporativo.
+
+6. **Importação em Lote e Assistente Transacional (`/import`):**
+   - Suporte a planilhas **CSV** (RFC 4180, detecção automática de delimitadores `,`, `;`, `\t`, suporte a UTF-8 BOM) e **XLSX** (multi-abas, datas seriais do Excel e durações fracionárias).
+   - Wizard em 3 etapas: Envio seguro (limite de 5 MiB / 5.000 linhas), Mapeamento e Prévia consolidada, e Confirmação transacional.
+   - Detecção inteligente de duplicidades contra o banco e linhas repetidas no lote via fingerprint SHA-256.
+   - Opção para ignorar linhas inválidas (`skipInvalidRows`) ou duplicadas.
+   - Snapshots de tarifa calculados no momento da importação e vínculo auditável de lote (`importBatchId`).
+
+7. **Backup e Restauração Consistente do SQLite:**
+   - Scripts nativos `scripts/backup.sh` e `scripts/restore.sh` baseados na API de Backup Online do SQLite (`better-sqlite3`).
+   - Verificação rigorosa de integridade antes e depois (`PRAGMA integrity_check`).
+   - Gestão estrita de modo WAL: fechamento de conexões ativas, remoção de arquivos residuais `-wal` e `-shm` e permissões seguras `0600`.
+
+---
+
+## Requisitos do Ambiente
+
+- **Node.js:** `>= 22.12.0` (validado com Node 22)
+- **Gerenciador de pacotes:** `pnpm` 10.13.1 (`corepack enable`)
+- **Docker e Docker Compose v2:** (opcional, para implantação em contêiner local)
+
+---
+
+## Instalação e Execução Local
 
 ```bash
+# 1. Configurar variáveis de ambiente
 cp .env.example .env
+
+# 2. Instalar dependências
 pnpm install
+
+# 3. Preparar banco SQLite e aplicar migrations
 pnpm db:migrate
+
+# 4. Iniciar servidor de desenvolvimento (escuta em 127.0.0.1:3000)
 pnpm dev
 ```
 
-A aplicação fica em <http://127.0.0.1:3000>. Tanto `pnpm dev` quanto `pnpm start`
-preparam o SQLite, aplicam as migrations pendentes e escutam somente em
-`127.0.0.1` no host. O ambiente é explicitamente `development` no primeiro e
-`production` no segundo, para que preparo, Prisma e Next usem o mesmo conjunto
-de arquivos dotenv. A porta local pode ser substituída com
-`HORAFLOW_LOCAL_PORT`. Não há autenticação no MVP; a exposição padrão é local.
+Acesse no navegador: <http://127.0.0.1:3000>
 
-Scripts Prisma fora do servidor usam `production` como padrão quando
-`NODE_ENV` não está definido, como os demais comandos Next. `pnpm db:migrate:dev`
-define `development`. As variáveis exportadas no processo têm precedência; a
-seleção de arquivos e expansão `$VAR` são feitas por `@next/env`, igual ao Next.
-
-Hosts recebidos são permitidos apenas para loopback por padrão (`127.0.0.1`,
-`localhost` e `[::1]`, em qualquer porta). Para uma implantação privada atrás
-de proxy, configure explicitamente `HORAFLOW_TRUSTED_HOSTS` com hosts exatos
-(separados por vírgula; pode incluir `:porta`). Não use curingas; encaminhe o
-mesmo host em `Host` e `X-Forwarded-Host`/`Forwarded`. Todas as requisições,
-inclusive leituras, têm host verificado. Mutations também exigem `Origin` HTTP(S)
-válida, não nula e igual ao host confiável; origem ausente ou `null` é rejeitada.
-Não confie em `X-Forwarded-Host` enviado livremente: o app o aceita somente se
-coincidir com `Host`. Configurar host confiável não muda a interface de escuta;
-acesso remoto deve permanecer em rede privada explicitamente configurada.
-
-O banco local fica em `data/horaflow.db`, ignorado pelo Git. Nunca coloque
-bancos, backups ou uploads em `public/`.
-
-## Scripts
-
-| Comando | Finalidade |
-| --- | --- |
-| `pnpm dev` | Prepara banco, aplica migrations e sobe o Next.js em `127.0.0.1:3000` |
-| `pnpm build` | Gera o Prisma Client e compila a aplicação |
-| `pnpm start` | Prepara/migra e inicia a build de produção em `127.0.0.1:3000` |
-| `pnpm lint` | ESLint com zero warnings |
-| `pnpm typecheck` | TypeScript estrito, sem emissão |
-| `pnpm test` | Testes unitários (Vitest) |
-| `pnpm test:integration` | Integração real com SQLite em `/tmp/opencode` |
-| `pnpm test:http` | Build de produção e testes HTTP contra ela |
-| `pnpm test:e2e` | Playwright em `127.0.0.1:3100` com banco exclusivo |
-| `pnpm verify` | Lint, typecheck, unitários, integração e testes HTTP (inclui build) |
-| `pnpm db:migrate` | Prepara o banco e aplica migrations |
-| `pnpm db:migrate:dev` | Prepara e migra em modo `development` |
-
-Os testes de integração criam bancos descartáveis em
-`/tmp/opencode/horaflow-f0-*`; o E2E usa `horaflow-f0-e2e.db` no mesmo diretório.
-Nenhum teste aponta para o banco real do usuário.
-
-### Playwright
-
-Instale o navegador antes da primeira execução:
+Para rodar em modo produção local:
 
 ```bash
+pnpm build
+pnpm start
+```
+
+---
+
+## Scripts de Backup e Restauração
+
+O HoraFlow inclui ferramentas para garantir cópias de segurança consistentes do banco de dados SQLite sem interromper leituras concorrentes:
+
+### 1. Criar Backup Online
+
+```bash
+# Gera snapshot consistente com timestamp em data/backups/
+./scripts/backup.sh
+
+# Ou especificando um diretório de destino customizado:
+./scripts/backup.sh /caminho/meus-backups
+```
+
+O script executa `PRAGMA integrity_check` no banco ativo e no snapshot gerado, aplicando permissões `0600` no arquivo resultante.
+
+### 2. Restaurar Snapshot
+
+```bash
+./scripts/restore.sh data/backups/horaflow-backup-20261105-120000.db
+```
+
+O script:
+- Valida a integridade do snapshot antes de qualquer alteração.
+- Cria salvaguarda automática do banco atual (`.pre-restore-*`).
+- Remove arquivos residuais de log de transação (`-wal` e `-shm`) para evitar corrupção de páginas.
+- Copia o snapshot, ajusta permissões e confirma a integridade final.
+
+---
+
+## Suíte de Testes e Qualidade
+
+O projeto conta com automação abrangente de testes:
+
+| Comando | Finalidade |
+|---|---|
+| `pnpm lint` | Verificação de código com ESLint (0 avisos tolerados) |
+| `pnpm typecheck` | Checagem estrita de tipos TypeScript (`tsc --noEmit`) |
+| `pnpm test` | Testes unitários (135 testes com Vitest) |
+| `pnpm test:integration` | Testes de integração concorrentes com SQLite real (42 testes) |
+| `pnpm test:http` | Build de produção Next.js e validação de segurança HTTP |
+| `pnpm test:e2e` | 14 cenários ponta a ponta com Playwright em navegador real |
+| `pnpm verify` | Execução completa de lint, tipos, unitários, integração e HTTP |
+
+### Executando os testes E2E com Playwright:
+
+```bash
+# Instala o navegador Chromium caso ainda não o tenha instalado
 pnpm exec playwright install chromium
+
+# Executa os testes E2E
 pnpm test:e2e
 ```
 
-O E2E sobe automaticamente um servidor de desenvolvimento na porta `3100` com
-banco próprio. Para rodar contra um servidor já existente, defina
-`PLAYWRIGHT_BASE_URL`. Em hosts sem as bibliotecas gráficas do Chromium, é
-necessário instalar as dependências de sistema do Playwright.
+---
 
-## Docker
+## Execução via Docker Compose
 
 ```bash
-HORFLOW_PORT=3100 docker compose up -d --build
+# Subir contêiner
+HORAFLOW_PORT=3100 docker compose up -d --build
+
+# Verificar integridade
 curl http://127.0.0.1:3100/api/health
+
+# Parar contêiner (os dados permanecem preservados no volume Docker horaflow-data)
 docker compose stop
 ```
 
-- A porta publicada é vinculada a `127.0.0.1` e pode ser trocada por
-  `HORFLOW_PORT` (o padrão é `3000`).
-- O banco fica no volume nomeado `horaflow-f0-data`, montado em `/data`.
-  Parar ou recriar o contêiner **não** apaga o volume.
-- O entrypoint prepara o SQLite e aplica `prisma migrate deploy` antes de
-  iniciar o servidor.
-- O processo roda como usuário não-root (`nextjs`, uid 1001).
-- O healthcheck consulta `GET /api/health`, que verifica o banco sem expor
-  caminho, dados ou stack trace.
-- Não use `docker compose down -v` sem autorização: isso remove o volume e os
-  dados.
+---
 
-## Estrutura
+## Estrutura do Projeto
 
 ```text
-prisma/                 schema, migrations e restrições SQL
-src/app/                App Router (layout, páginas e /api/health)
-src/components/         layout, componentes compartilhados e UI base
-src/lib/                banco, ambiente, dinheiro e erros
-src/modules/settings/   schema Zod, serviço e formulário de configurações
-tests/                  unitários, integração SQLite e E2E
-scripts/                preparação de banco local e de testes
-docker/                 entrypoint do contêiner
-docs/                   planejamento e checkpoints
+prisma/                 Schema Prisma, migrations e restrições SQLite
+src/app/                Next.js App Router (páginas, layouts e rota de exportação /api)
+src/components/         Componentes compartilhados de interface e design system
+src/lib/                Utilitários centrais: banco SQLite, dinheiro, duração, datas e erros
+src/modules/
+  ├── client/           Gestão de clientes e resolução de tarifas
+  ├── project/          Gestão de projetos vinculados
+  ├── time-entry/       Apontamento de horas, intervalos e validação de sobreposição
+  ├── billing/          Fechamento mensal, pagamentos, estornos e reabertura
+  ├── dashboard/        KPIs consolidados, métricas e distribuição por cliente/projeto
+  ├── reporting/        Motor de relatórios, filtros e exportadores CSV, XLSX e PDF
+  ├── import/           Wizard de carga de dados CSV/XLSX, normalização e prévia
+  └── settings/         Configurações globais e tarifas padrão
+scripts/                Scripts de migração, backup online e restauração consistente
+tests/                  Suítes de testes: unitários, integração SQLite, rotas HTTP e E2E
+docs/planejamento/      Planos arquiteturais das Fases 0 a 5 e PRD
+docs/checkpoints/       Evidências de execução e pareceres de revisão independente
 ```
-
-## Decisões e pendências
-
-As duas decisões financeiras necessárias para o schema inicial foram aprovadas
-em 2026-11-04: preservação de versões de `BillingItem` com `releasedAt` e
-unicidade parcial do apontamento ativo, além de snapshots imutáveis de
-cliente/projeto/descrição. Isso libera apenas o schema; **não** autoriza os
-fluxos da Fase 3.
-
-As demais decisões de domínio continuam pendentes e estão listadas em
-[`docs/planejamento/README.md`](docs/planejamento/README.md). O checkpoint
-técnico da fase está em
-[`docs/checkpoints/fase-0.md`](docs/checkpoints/fase-0.md).

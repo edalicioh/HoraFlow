@@ -1,10 +1,17 @@
 # Fase 3 — Fechamentos, pagamentos e auditoria
 
-**Estado:** não iniciada.  
-**Executor:** Big Pickle (`opencode/big-pickle`).  
-**Revisor padrão:** GPT-6.1 Sol (`openai/gpt-6.1-sol`), independente e somente leitura antes do checkpoint.  
-**Dependência:** Fase 2 aprovada; contratos de schema financeiro devem ser definidos já na Fase 0.  
+**Estado:** autorizada em 2026-11-05 (em execução).
+**Executor:** Big Pickle (`opencode/big-pickle`) / autorizado em 2026-11-05 no Antigravity: Gemini 4 Argon (Medium) (`inherit`), sequencial.
+**Revisor padrão:** GPT-6.1 Sol (`openai/gpt-6.1-sol`) / autorizado em 2026-11-05 no Antigravity: subagente `reviewer` somente leitura (`inherit`/`pro`) antes do checkpoint.
+**Dependência:** Fase 2 aprovada em 2026-11-05; contratos de schema financeiro definidos na Fase 0.
 **Próxima fase:** [Fase 4 — Dashboard e relatórios](fase-4-dashboard-relatorios.md).
+
+### Decisões de domínio confirmadas em 2026-11-05
+
+- **Competência fechada:** bloquear novos apontamentos, importação e alterações daquele cliente/mês até reabertura, inclusive mudança de um registro para dentro/fora dessa competência.
+- **Fechamento sem itens vs. total R$ 0,00:** rejeitar fechamento vazio (`0` apontamentos elegíveis), mas permitir fechar quando houver apontamentos faturáveis elegíveis com minutos registrados cujo valor total seja `R$ 0,00` (`totalCents = 0`, tarifa zero).
+- **Data civil (`paidAt`) e forma de pagamento (`method`):** converter a data civil informada (`YYYY-MM-DD`) para instante UTC no meio-dia local (`12:00`) do fuso configurado em `Settings.timezone` (preservando a data civil estável sem deslocamento entre fusos) e exigir o preenchimento de `method` (forma de pagamento) na validação Zod do formulário de recebimento (conforme RF08).
+- **Motivo obrigatório em reabertura e estorno:** exigir preenchimento de motivo/observação não vazio tanto ao reabrir um fechamento quanto ao estornar um pagamento, registrando-o na auditoria (`AuditLog`) sem criar `User` ou login.
 
 ## 1. Objetivo
 
